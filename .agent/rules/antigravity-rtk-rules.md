@@ -1,3 +1,8 @@
+---
+trigger: always_on
+description: Luôn sử dụng rtk để proxy và nén output của shell commands.
+---
+
 # RTK - Rust Token Killer (Google Antigravity)
 
 **Usage**: Token-optimized CLI proxy for shell commands.

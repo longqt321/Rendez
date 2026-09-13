@@ -9,7 +9,6 @@ import '../../../core/providers/chat_providers.dart';
 import '../bookmarks/bookmarks_screen.dart';
 import '../chat/chat_list_screen.dart';
 import '../contribute/contribute_screen.dart';
-import 'widgets/change_password_dialog.dart';
 import 'widgets/contribution_history_sheet.dart';
 
 class AuthProfileScreen extends ConsumerStatefulWidget {
@@ -20,24 +19,15 @@ class AuthProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _AuthProfileScreenState extends ConsumerState<AuthProfileScreen> {
-  int _authTabIndex = 0; // 0 = Login, 1 = Register
-
   final _loginEmailController = TextEditingController(
     text: 'longtran@rendez.vn',
   );
   final _loginPasswordController = TextEditingController(text: '12345678');
 
-  final _regNameController = TextEditingController();
-  final _regEmailController = TextEditingController();
-  final _regPasswordController = TextEditingController();
-
   @override
   void dispose() {
     _loginEmailController.dispose();
     _loginPasswordController.dispose();
-    _regNameController.dispose();
-    _regEmailController.dispose();
-    _regPasswordController.dispose();
     super.dispose();
   }
 
@@ -368,30 +358,7 @@ class _AuthProfileScreenState extends ConsumerState<AuthProfileScreen> {
                   );
                 },
               ),
-              const Divider(height: 1, color: AppColors.neutral200),
-              ListTile(
-                leading: const Icon(
-                  Icons.lock_outline_rounded,
-                  size: 22,
-                  color: AppColors.neutral700,
-                ),
-                title: const Text(
-                  'Đổi mật khẩu tài khoản',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                ),
-                trailing: const Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: AppColors.neutral400,
-                ),
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  showDialog(
-                    context: context,
-                    builder: (_) => const ChangePasswordDialog(),
-                  );
-                },
-              ),
+
               Divider(
                 height: 1,
                 color: isDark
@@ -475,223 +442,84 @@ class _AuthProfileScreenState extends ConsumerState<AuthProfileScreen> {
   }
 
   Widget _buildLoggedOutView(BuildContext context) {
-    return Column(
-      children: [
-        // Tab switcher
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: AppColors.neutral100,
-            borderRadius: BorderRadius.circular(16),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.neutral200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Đăng Nhập Rendez',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppColors.neutral900,
+            ),
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _authTabIndex = 0),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 9),
-                    decoration: BoxDecoration(
-                      color: _authTabIndex == 0
-                          ? Colors.white
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Đăng Nhập',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: _authTabIndex == 0
-                            ? FontWeight.w800
-                            : FontWeight.w600,
-                        color: _authTabIndex == 0
-                            ? AppColors.neutral900
-                            : AppColors.neutral500,
-                      ),
-                    ),
-                  ),
+          const SizedBox(height: 6),
+          const Text(
+            'Đăng nhập để khám phá quán, lưu địa điểm và kết nối bạn bè.',
+            style: TextStyle(fontSize: 12, color: AppColors.neutral500),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Email đăng nhập',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _loginEmailController,
+            style: const TextStyle(fontSize: 13),
+            decoration: const InputDecoration(
+              hintText: 'email@domain.com',
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Mật khẩu',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _loginPasswordController,
+            obscureText: true,
+            style: const TextStyle(fontSize: 13),
+            decoration: const InputDecoration(hintText: '••••••••'),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _authTabIndex = 1),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 9),
-                    decoration: BoxDecoration(
-                      color: _authTabIndex == 1
-                          ? Colors.white
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Đăng Ký Mới',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: _authTabIndex == 1
-                            ? FontWeight.w800
-                            : FontWeight.w600,
-                        color: _authTabIndex == 1
-                            ? AppColors.neutral900
-                            : AppColors.neutral500,
-                      ),
-                    ),
-                  ),
+              onPressed: () {
+                ref
+                    .read(authProvider.notifier)
+                    .login(
+                      _loginEmailController.text,
+                      _loginPasswordController.text,
+                    );
+              },
+              child: const Text(
+                'Đăng Nhập Ngay',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 20),
-
-        if (_authTabIndex == 0) ...[
-          // Login Form
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.neutral200),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Email đăng nhập',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: _loginEmailController,
-                  style: const TextStyle(fontSize: 13),
-                  decoration: const InputDecoration(
-                    hintText: 'email@domain.com',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Mật khẩu',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: _loginPasswordController,
-                  obscureText: true,
-                  style: const TextStyle(fontSize: 13),
-                  decoration: const InputDecoration(hintText: '••••••••'),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: () {
-                      ref
-                          .read(authProvider.notifier)
-                          .login(
-                            _loginEmailController.text,
-                            _loginPasswordController.text,
-                          );
-                    },
-                    child: const Text(
-                      'Đăng Nhập Ngay',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ] else ...[
-          // Register Form
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.neutral200),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Họ và tên',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: _regNameController,
-                  style: const TextStyle(fontSize: 13),
-                  decoration: const InputDecoration(hintText: 'Nguyễn Văn A'),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Email',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: _regEmailController,
-                  style: const TextStyle(fontSize: 13),
-                  decoration: const InputDecoration(
-                    hintText: 'email@domain.com',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Mật khẩu',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: _regPasswordController,
-                  obscureText: true,
-                  style: const TextStyle(fontSize: 13),
-                  decoration: const InputDecoration(
-                    hintText: 'Tối thiểu 8 ký tự',
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: () {
-                      ref
-                          .read(authProvider.notifier)
-                          .login('new@user.com', 'password');
-                    },
-                    child: const Text(
-                      'Tạo Tài Khoản Rendez',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
             ),
           ),
         ],
-      ],
+      ),
     );
   }
 

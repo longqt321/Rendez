@@ -7,7 +7,6 @@ import '../../../core/data/mock_data.dart';
 import '../../../core/models/user.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/utils/currency_formatter.dart';
-import 'widgets/add_place_dialog.dart';
 
 class ContributeScreen extends ConsumerStatefulWidget {
   const ContributeScreen({super.key});
@@ -107,15 +106,50 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
                       ),
                       TextButton(
                         onPressed: () {
+                          final nameCtrl = TextEditingController();
+                          final addrCtrl = TextEditingController();
                           showDialog(
                             context: context,
-                            builder: (_) => AddPlaceDialog(
-                              onPlaceAdded: (name, addr) {
-                                setState(() {
-                                  _selectedPlaceName = name;
-                                  _selectedPlaceAddress = addr;
-                                });
-                              },
+                            builder: (ctx) => AlertDialog(
+                              title: const Text(
+                                'Đề Xuất Quán Mới',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                              ),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TextField(
+                                    controller: nameCtrl,
+                                    decoration: const InputDecoration(hintText: 'Tên quán...'),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  TextField(
+                                    controller: addrCtrl,
+                                    decoration: const InputDecoration(hintText: 'Địa chỉ quán...'),
+                                  ),
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx),
+                                  child: const Text('Hủy'),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                                  onPressed: () {
+                                    if (nameCtrl.text.trim().isNotEmpty) {
+                                      setState(() {
+                                        _selectedPlaceName = nameCtrl.text.trim();
+                                        _selectedPlaceAddress = addrCtrl.text.trim().isNotEmpty
+                                            ? addrCtrl.text.trim()
+                                            : 'Chưa cập nhật địa chỉ';
+                                      });
+                                      Navigator.pop(ctx);
+                                    }
+                                  },
+                                  child: const Text('Thêm', style: TextStyle(color: Colors.white)),
+                                ),
+                              ],
                             ),
                           );
                         },

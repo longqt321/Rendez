@@ -62,4 +62,5 @@ app.*.map.json
 /rendez
 /.agents
 /scratch/
-/graphify-out/
+**/graphify-out/
+
