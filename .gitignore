@@ -1,0 +1,65 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VS Code
+.vscode/
+
+# Flutter / Dart / Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+**/.dart_tool/
+**/.flutter-plugins*
+**/.pub-cache/
+**/.pub/
+**/build/
+**/coverage/
+.dart_tool/
+build/
+
+# Android build & local artifacts
+**/android/**/gradle-*.jar
+**/android/.gradle/
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
+
+# iOS Flutter build & local artifacts
+**/ios/**/Pods/
+**/ios/**/.symlinks/
+**/ios/**/flutter_export_environment.sh
+**/ios/**/Generated.xcconfig
+**/ios/**/GeneratedPluginRegistrant.h
+**/ios/**/GeneratedPluginRegistrant.m
+
+# Symbolication & Obfuscation
+app.*.symbols
+app.*.map.json
+
+# Widget Preview related
+.widget_preview/
+**/.widget_preview/
+
+# Monorepo specific
+/rendez
+/.agents
+/scratch/
+/graphify-out/
