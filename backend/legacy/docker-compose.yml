@@ -1,0 +1,61 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: rendez-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-rendez}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-rendez_secret}
+      POSTGRES_DB: ${DB_NAME:-rendez_db}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-rendez} -d ${DB_NAME:-rendez_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rendez-network
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: rendez-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 8080
+      ENV: production
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-rendez}
+      DB_PASSWORD: ${DB_PASSWORD:-rendez_secret}
+      DB_NAME: ${DB_NAME:-rendez_db}
+      DB_SSLMODE: disable
+      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-in-production}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-30m}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-336h}
+      OCR_SERVICE_URL: ${OCR_SERVICE_URL:-http://localhost:8000}
+      MAP_SERVICE_URL: ${MAP_SERVICE_URL:-http://localhost:8001}
+      MAP_SERVICE_API_KEY: ${MAP_SERVICE_API_KEY:-}
+      UPLOAD_MAX_SIZE_MB: ${UPLOAD_MAX_SIZE_MB:-10}
+      UPLOAD_DIR: /app/uploads
+    ports:
+      - "${PORT:-8080}:8080"
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - rendez-network
+
+networks:
+  rendez-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  uploads_data:

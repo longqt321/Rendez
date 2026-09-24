@@ -1,0 +1,20 @@
+name: rendez-core
+services:
+  db:
+    image: postgres:18.4
+    environment:
+      # Local-only credentials. Use separate managed secrets in any deployment.
+      POSTGRES_USER: rendez
+      POSTGRES_PASSWORD: rendez_local
+      POSTGRES_DB: rendez_core
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - core_postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rendez -d rendez_core"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+volumes:
+  core_postgres_data:
