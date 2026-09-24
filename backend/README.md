@@ -1,21 +1,26 @@
-# Rendez backend M0
+# Rendez backend (local development)
 
-Requires Docker Compose and Go 1.26 or newer. This milestone has only process and database health checks. Run commands from the repository root:
+Requires Docker Compose and Go 1.26 or newer. Run from the repository root:
 
-```sh
+~~~sh
 make -C backend local-db
 make -C backend migrate
-make -C backend verify-m0
-make -C backend run
-```
+make -C backend seed-dev
+make -C backend run-dev
+~~~
 
-In another terminal:
+The dev build exposes POST /dev/login for the fixed user and admin fixtures. It requires APP_ENV=development. The normal build (make -C backend run) has no development login route. Both builds use real database-backed opaque sessions; the database stores token hashes, not bearer tokens.
 
-```sh
-curl --fail http://127.0.0.1:8080/health/live
-curl --fail http://127.0.0.1:8080/health/ready
-```
+In another terminal, check health and create a session:
 
-Press Ctrl-C to stop the API. Then run `make -C backend local-down` to stop PostgreSQL **without deleting its volume**. `make -C backend test` runs unit tests; `make -C backend test-integration` creates and removes its own temporary test database inside the local PostgreSQL instance. It never resets `rendez_core`.
+~~~sh
+curl -i http://127.0.0.1:8080/health/live
+curl -i http://127.0.0.1:8080/health/ready
+curl -i -X POST http://127.0.0.1:8080/dev/login -H 'Content-Type: application/json' -d '{"fixture":"user"}'
+~~~
 
-The Makefile uses disposable local credentials and a loopback-only database port. Export `DATABASE_URL` and optionally `HTTP_ADDR` to override. The API refuses startup before its Goose schema is installed. `-migrate` applies only `migrations/core` from the backend working directory. The old Gin/GORM/password/JWT project and its migration files are preserved as a separate, inactive nested module in `legacy/`; no legacy database is modified. The original untracked backend is also checkpointed in ignored `../scratch/rendez-backend-before-m0-20260923.tar.gz`.
+Pass the returned bearer to GET /v1/me; revoke it with DELETE /v1/auth/session. Stop the API with Ctrl-C. make -C backend local-down stops PostgreSQL without removing its volume.
+
+make -C backend verify-m1 runs normal-build tests plus a real PostgreSQL session test in a temporary database. make -C backend test-integration runs the migration/readiness test in another temporary database. Neither resets rendez_core.
+
+The Makefile provides disposable local DATABASE_URL, HTTP_ADDR and APP_ENV defaults. Export variables to override; .env.example is a reference, not auto-loaded. The service refuses startup before its Goose migrations are installed. Active migrations live only in migrations/core. The previous Gin/GORM/password/JWT project remains as an inactive nested module in legacy/.

@@ -15,7 +15,7 @@ func TestM0Live(t *testing.T) {
 		t.Fatal(err)
 	}
 	pool.Close()
-	r := routes(context.Background(), pool)
+	r := routes(context.Background(), pool, "test")
 	live := httptest.NewRecorder()
 	r.ServeHTTP(live, httptest.NewRequest(http.MethodGet, "/health/live", nil))
 	if live.Code != http.StatusOK || live.Body.String() != "{\"status\":\"ok\"}\n" {

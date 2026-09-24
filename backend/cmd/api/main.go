@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -18,23 +17,35 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
+	"rendez-backend/internal/auth"
+	"rendez-backend/internal/httpx"
 )
 
-const schemaVersion = 1
+const schemaVersion = 2
 
 func main() {
 	migrateOnly := flag.Bool("migrate", false, "apply Goose migrations and exit (run from backend/)")
+	seedDev := flag.Bool("seed-dev", false, "create development User/Admin fixtures (dev build only)")
 	flag.Parse()
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	if err := run(ctx, *migrateOnly); err != nil {
+	if err := run(ctx, *migrateOnly, *seedDev); err != nil {
 		slog.Error("backend stopped", "error", err)
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context, migrateOnly bool) error {
+func run(ctx context.Context, migrateOnly, seedDev bool) error {
+	appEnv := os.Getenv("APP_ENV")
+	switch appEnv {
+	case "development", "test", "production":
+	default:
+		return errors.New("APP_ENV must be development, test or production")
+	}
+	if err := auth.ValidateBuild(appEnv); err != nil {
+		return err
+	}
 	url := os.Getenv("DATABASE_URL")
 	if url == "" {
 		return errors.New("DATABASE_URL is required")
@@ -63,6 +74,12 @@ func run(ctx context.Context, migrateOnly bool) error {
 	if migrateOnly {
 		return migrate(ctx, pool)
 	}
+	if seedDev {
+		if err := ready(ctx, pool); err != nil {
+			return errors.New("database is not ready; run migrations before seeding")
+		}
+		return auth.SeedDev(ctx, pool, appEnv)
+	}
 	if err := ready(ctx, pool); err != nil {
 		return errors.New("database is not ready; check connectivity and run migrations for this binary")
 	}
@@ -75,7 +92,7 @@ func run(ctx context.Context, migrateOnly bool) error {
 		return fmt.Errorf("cannot listen on HTTP_ADDR: %w", err)
 	}
 	server := &http.Server{
-		Handler:           routes(ctx, pool),
+		Handler:           routes(ctx, pool, appEnv),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      10 * time.Second,
@@ -135,28 +152,24 @@ func ready(ctx context.Context, pool *pgxpool.Pool) error {
 	return nil
 }
 
-func routes(ctx context.Context, pool *pgxpool.Pool) http.Handler {
+func routes(ctx context.Context, pool *pgxpool.Pool, appEnv string) http.Handler {
 	r := chi.NewRouter()
 	r.Get("/health/live", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+		httpx.JSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
 	r.Get("/health/ready", func(w http.ResponseWriter, r *http.Request) {
 		if ctx.Err() != nil || ready(r.Context(), pool) != nil {
-			writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": map[string]any{
-				"code": "database_unavailable", "message": "Database is not ready", "retryable": true,
-			}})
+			httpx.Error(w, http.StatusServiceUnavailable, "database_unavailable", "Database is not ready", true)
 			return
 		}
-		writeJSON(w, http.StatusOK, map[string]string{"status": "ready"})
+		httpx.JSON(w, http.StatusOK, map[string]string{"status": "ready"})
+	})
+	auth.Register(r, pool, appEnv)
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		httpx.Error(w, http.StatusNotFound, "not_found", "Resource not found", false)
+	})
+	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
+		httpx.Error(w, http.StatusMethodNotAllowed, "method_not_allowed", "Method not allowed", false)
 	})
 	return r
-}
-
-func writeJSON(w http.ResponseWriter, status int, value any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Cache-Control", "no-store")
-	w.WriteHeader(status)
-	if err := json.NewEncoder(w).Encode(value); err != nil {
-		slog.Error("HTTP response write failed")
-	}
 }
