@@ -47,6 +47,8 @@ make mobile
 # Hoặc: cd mobile && flutter run -d chrome
 ```
 
+`make db-recreate` tạo lại container PostgreSQL phát triển, giữ dữ liệu trong volume.
+
 `make api` chạy build bình thường, không có `/dev/login`. `make down` dừng PostgreSQL và giữ volume. Biến `DATABASE_URL`, `APP_ENV`, `HTTP_ADDR` được cấu hình qua môi trường; `backend/.env.example` là tài liệu mẫu, không tự nạp. Chi tiết endpoint và phiên đăng nhập: [backend/README.md](backend/README.md).
 
 ## Kiểm tra
@@ -54,7 +56,7 @@ make mobile
 ```sh
 make check        # Go vet, test normal/dev, Dart analyze và Flutter test
 make format      # gofmt và dart format
-make integration # DB phải chạy; test tạo và xóa DB tạm, giữ rendez_core
+make integration # Tự tạo PostgreSQL Docker mới, chạy test và dọn container
 ```
 
 GitHub Actions chạy kiểm tra Go/Flutter và integration PostgreSQL. Android/iOS cần toolchain riêng; CI chưa build hai nền tảng này.

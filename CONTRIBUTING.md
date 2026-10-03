@@ -4,7 +4,7 @@
 
 Mỗi thay đổi dùng một nhánh ngắn và một PR có người còn lại review. Mô tả vấn đề, thay đổi và lệnh kiểm tra. Giữ PR nhỏ theo tính năng hoặc trách nhiệm; không trộn refactor và tính năng mới.
 
-Chạy `make check` trước PR. Thay đổi SQL/session cần chạy `make integration` với PostgreSQL local. Dùng `make format` để định dạng; commit cả lockfile khi dependency thay đổi. Không commit secrets, file build hoặc dữ liệu người dùng.
+Chạy `make check` trước PR. Thay đổi SQL/session cần chạy `make integration` với PostgreSQL Docker tạm được tạo tự động. Dùng `make format` để định dạng; commit cả lockfile khi dependency thay đổi. Không commit secrets, file build hoặc dữ liệu người dùng.
 
 ## Ranh giới mã nguồn
 
@@ -17,7 +17,7 @@ Chạy `make check` trước PR. Thay đổi SQL/session cần chạy `make inte
 
 Chỉ `backend/migrations/core` được Goose chạy. `migrations/drafts` lưu SQL chưa hoàn thiện. Khi triển khai catalog, chuyển bản nháp vào core, cập nhật schema version và kiểm tra migration/readiness cùng nhau.
 
-Không sửa migration đã được chia sẻ/applied; thêm forward migration. Không reset DB hoặc xóa volume trong refactor. Integration tests dùng database tạm riêng. `/dev/login` và seed fixtures chỉ có trong dev build, với `APP_ENV=development`.
+Không sửa migration đã được chia sẻ/applied; thêm forward migration. Không reset DB hoặc xóa volume trong refactor. Integration tests dùng Compose project riêng, cổng tự cấp và tmpfs; tự dọn container kể cả khi test lỗi. Không dùng PostgreSQL hệ thống hoặc `DATABASE_URL` phát triển. `/dev/login` và seed fixtures chỉ có trong dev build, với `APP_ENV=development`.
 
 ## Phạm vi đồ án
 

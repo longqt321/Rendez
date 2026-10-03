@@ -1,0 +1,17 @@
+# Disposable PostgreSQL for integration tests; independent of the dev database.
+services:
+  db:
+    image: postgres:18.4
+    environment:
+      POSTGRES_USER: rendez
+      POSTGRES_PASSWORD: rendez_test_only
+      POSTGRES_DB: rendez_test
+    ports:
+      - "127.0.0.1::5432"
+    tmpfs:
+      - /var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rendez -d rendez_test"]
+      interval: 1s
+      timeout: 2s
+      retries: 30

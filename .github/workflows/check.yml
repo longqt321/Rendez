@@ -18,9 +18,7 @@ jobs:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
       - run: make check-backend
-      - run: make db migrate integration
-      - if: always()
-        run: make down
+      - run: make integration
 
   mobile:
     runs-on: ubuntu-latest

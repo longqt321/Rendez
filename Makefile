@@ -1,17 +1,21 @@
-.PHONY: help db down migrate seed api api-dev mobile-deps mobile check check-backend check-mobile integration format
+.PHONY: help db db-recreate down migrate seed api api-dev mobile-deps mobile check check-backend check-mobile integration format
 
 help:
 	@echo "db/down         Start/stop local PostgreSQL (preserve data)"
+	@echo "db-recreate     Recreate dev PostgreSQL container (preserve data)"
 	@echo "migrate/seed    Apply active migrations / seed dev fixtures"
 	@echo "api/api-dev     Run normal/development API"
 	@echo "mobile-deps     Install locked Flutter dependencies"
 	@echo "mobile          Run Flutter (select a device)"
 	@echo "check           Analyze and test backend + mobile"
-	@echo "integration     Run isolated PostgreSQL tests (requires db)"
+	@echo "integration     Run tests in fresh Docker PostgreSQL (auto cleanup)"
 	@echo "format          Format Go and Dart sources"
 
 db:
 	$(MAKE) -C backend local-db
+
+db-recreate:
+	$(MAKE) -C backend local-recreate
 
 down:
 	$(MAKE) -C backend local-down
@@ -45,7 +49,6 @@ check-mobile:
 
 integration:
 	$(MAKE) -C backend test-integration
-	$(MAKE) -C backend verify-m1
 
 format:
 	cd backend && gofmt -w cmd internal

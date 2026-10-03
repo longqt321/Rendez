@@ -29,8 +29,8 @@ func isolatedPool(t *testing.T) *pgxpool.Pool {
 	if cfg.ConnConfig.Host != "127.0.0.1" && cfg.ConnConfig.Host != "localhost" {
 		t.Fatal("integration tests require loopback PostgreSQL")
 	}
-	if cfg.ConnConfig.Database != "rendez_core" {
-		t.Fatal("integration tests require the local rendez_core database")
+	if cfg.ConnConfig.Database != "rendez_test" {
+		t.Fatal("integration tests require the disposable rendez_test database")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
