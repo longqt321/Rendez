@@ -1,6 +1,6 @@
-import '../models/bill_item.dart';
-import '../models/place.dart';
-import '../models/user.dart';
+import 'package:rendez/core/models/bill_item.dart';
+import 'package:rendez/core/models/place.dart';
+import 'package:rendez/core/models/user.dart';
 
 class MockData {
   MockData._();

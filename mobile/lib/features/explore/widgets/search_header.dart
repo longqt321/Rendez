@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/providers/app_providers.dart';
-import '../../../core/providers/chat_providers.dart';
-import '../../chat/chat_list_screen.dart';
-import '../../contribute/contribute_screen.dart';
-import 'advanced_filter_sheet.dart';
+import 'package:rendez/core/constants/app_colors.dart';
+import 'package:rendez/core/providers/app_providers.dart';
+import 'package:rendez/core/providers/chat_providers.dart';
+import 'package:rendez/features/chat/chat_list_screen.dart';
+import 'package:rendez/features/contribute/contribute_screen.dart';
+import 'package:rendez/features/explore/widgets/advanced_filter_sheet.dart';
 
 class SearchHeader extends ConsumerWidget {
   const SearchHeader({super.key});

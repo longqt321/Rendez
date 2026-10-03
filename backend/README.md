@@ -23,4 +23,4 @@ Pass the returned bearer to GET /v1/me; revoke it with DELETE /v1/auth/session. 
 
 make -C backend verify-m1 runs normal-build tests plus a real PostgreSQL session test in a temporary database. make -C backend test-integration runs the migration/readiness test in another temporary database. Neither resets rendez_core.
 
-The Makefile provides disposable local DATABASE_URL, HTTP_ADDR and APP_ENV defaults. Export variables to override; .env.example is a reference, not auto-loaded. The service refuses startup before its Goose migrations are installed. Active migrations live only in migrations/core. The previous Gin/GORM/password/JWT project remains as an inactive nested module in legacy/.
+The Makefile provides disposable local DATABASE_URL, HTTP_ADDR and APP_ENV defaults. Export variables to override; .env.example is a reference, not auto-loaded. The service refuses startup before its Goose migrations are installed. Active migrations live only in migrations/core. The previous inactive Gin/GORM backend was removed during repository cleanup; it remains in Git history. Draft SQL in migrations/drafts is not executed.

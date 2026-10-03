@@ -2,9 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'core/providers/app_providers.dart';
-import 'core/theme/app_theme.dart';
-import 'features/navigation/main_scaffold.dart';
+import 'package:rendez/core/providers/app_providers.dart';
+import 'package:rendez/core/theme/app_theme.dart';
+import 'package:rendez/features/navigation/main_scaffold.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

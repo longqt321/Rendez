@@ -1,4 +1,4 @@
-.PHONY: local-db local-down migrate seed-dev run run-dev build test test-integration verify-m0 verify-m1
+.PHONY: local-db local-down migrate seed-dev run run-dev build test check test-integration verify-m0 verify-m1
 
 # Disposable local credentials; an explicitly exported URL takes precedence.
 export DATABASE_URL ?= postgres://rendez:rendez_local@127.0.0.1:55432/rendez_core?sslmode=disable
@@ -28,6 +28,11 @@ build:
 
 test:
 	go test ./...
+	go test -tags=dev ./...
+
+check: test
+	go vet ./...
+	go vet -tags=dev ./...
 
 test-integration:
 	@TEST_DATABASE_URL="$$DATABASE_URL" go test -tags=integration -count=1 -v ./cmd/api

@@ -1,66 +1,74 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+# Local environment; keep templates versioned
+.env
+.env.*
+!.env.example
+!.env.*.example
 
-# IntelliJ related
+# OS, editor and temporary files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.log
 *.iml
 *.ipr
 *.iws
 .idea/
-
-# VS Code
 .vscode/
+.history/
 
-# Flutter / Dart / Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-**/.dart_tool/
-**/.flutter-plugins*
-**/.pub-cache/
-**/.pub/
-**/build/
-**/coverage/
-.dart_tool/
-build/
-
-# Android build & local artifacts
-**/android/**/gradle-*.jar
-**/android/.gradle/
-**/android/local.properties
-**/android/**/GeneratedPluginRegistrant.java
-**/android/app/debug
-**/android/app/profile
-**/android/app/release
-
-# iOS Flutter build & local artifacts
-**/ios/**/Pods/
-**/ios/**/.symlinks/
-**/ios/**/flutter_export_environment.sh
-**/ios/**/Generated.xcconfig
-**/ios/**/GeneratedPluginRegistrant.h
-**/ios/**/GeneratedPluginRegistrant.m
-
-# Symbolication & Obfuscation
-app.*.symbols
-app.*.map.json
-
-# Widget Preview related
-.widget_preview/
-**/.widget_preview/
-
-# Monorepo specific
-/rendez
-/.agents
+# Local agent/tool state (AGENTS.md stays versioned)
+/.agent/
+/.agents/
+/.codex/
+/.aws/
+/.gemini/
+/.specify/
 /scratch/
 **/graphify-out/
 
+# Go build and test artifacts
+/backend/bin/
+/backend/*.out
+/backend/*.test
+
+# Flutter / Dart generated files
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+coverage/
+.widget_preview/
+**/doc/api/
+app.*.symbols
+app.*.map.json
+
+# Android local configuration, builds and signing keys
+**/android/.gradle/
+**/android/.cxx/
+**/android/captures/
+**/android/local.properties
+**/android/key.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+**/android/**/*.keystore
+**/android/**/*.jks
+
+# iOS generated dependencies and local build settings
+**/ios/**/Pods/
+**/ios/**/.symlinks/
+**/ios/**/DerivedData/
+**/ios/**/xcuserdata/
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/App.framework/
+**/ios/Flutter/Flutter.framework/
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/flutter_assets/
+**/ios/Runner/GeneratedPluginRegistrant.*

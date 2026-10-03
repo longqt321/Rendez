@@ -4,9 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/constants/app_colors.dart';
-import '../../core/providers/chat_providers.dart';
-import 'chat_conversation_screen.dart';
+import 'package:rendez/core/constants/app_colors.dart';
+import 'package:rendez/core/providers/chat_providers.dart';
+import 'package:rendez/features/chat/chat_conversation_screen.dart';
 
 class ChatListScreen extends ConsumerWidget {
   const ChatListScreen({super.key});

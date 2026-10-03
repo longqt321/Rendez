@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../core/constants/app_colors.dart';
+import 'package:rendez/core/constants/app_colors.dart';
 
 /// Micro-interaction button for saving / liking places with a tactile Polaroid click
 /// feel, bouncy spring animation, and haptic feedback.

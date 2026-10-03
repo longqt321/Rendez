@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/providers/app_providers.dart';
-import '../../../core/providers/chat_providers.dart';
-import '../bookmarks/bookmarks_screen.dart';
-import '../chat/chat_list_screen.dart';
-import '../contribute/contribute_screen.dart';
-import 'widgets/contribution_history_sheet.dart';
+import 'package:rendez/core/constants/app_colors.dart';
+import 'package:rendez/core/providers/app_providers.dart';
+import 'package:rendez/core/providers/chat_providers.dart';
+import 'package:rendez/features/bookmarks/bookmarks_screen.dart';
+import 'package:rendez/features/chat/chat_list_screen.dart';
+import 'package:rendez/features/contribute/contribute_screen.dart';
+import 'package:rendez/features/auth/widgets/contribution_history_sheet.dart';
 
 class AuthProfileScreen extends ConsumerStatefulWidget {
   const AuthProfileScreen({super.key});
@@ -474,9 +474,7 @@ class _AuthProfileScreenState extends ConsumerState<AuthProfileScreen> {
           TextField(
             controller: _loginEmailController,
             style: const TextStyle(fontSize: 13),
-            decoration: const InputDecoration(
-              hintText: 'email@domain.com',
-            ),
+            decoration: const InputDecoration(hintText: 'email@domain.com'),
           ),
           const SizedBox(height: 12),
           const Text(

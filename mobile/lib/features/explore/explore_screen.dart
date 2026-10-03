@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/providers/app_providers.dart';
-import '../contribute/contribute_screen.dart';
-import 'widgets/filter_chips_bar.dart';
-import 'widgets/map_view_widget.dart';
-import 'widgets/masonry_place_card.dart';
-import 'widgets/search_header.dart';
+import 'package:rendez/core/constants/app_colors.dart';
+import 'package:rendez/core/providers/app_providers.dart';
+import 'package:rendez/features/contribute/contribute_screen.dart';
+import 'package:rendez/features/explore/widgets/filter_chips_bar.dart';
+import 'package:rendez/features/explore/widgets/map_view_widget.dart';
+import 'package:rendez/features/explore/widgets/masonry_place_card.dart';
+import 'package:rendez/features/explore/widgets/search_header.dart';
 
 class ExploreScreen extends ConsumerWidget {
   const ExploreScreen({super.key});

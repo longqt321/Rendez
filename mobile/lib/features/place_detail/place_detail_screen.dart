@@ -3,15 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/models/place.dart';
-import '../../../core/providers/app_providers.dart';
-import '../../../core/utils/currency_formatter.dart';
-import '../explore/widgets/bouncing_heart_button.dart';
-import 'widgets/bill_breakdown_card.dart';
-import 'widgets/menu_tab_view.dart';
-import 'widgets/plan_invite_sheet.dart';
-import 'widgets/price_report_sheet.dart';
+import 'package:rendez/core/constants/app_colors.dart';
+import 'package:rendez/core/models/place.dart';
+import 'package:rendez/core/providers/app_providers.dart';
+import 'package:rendez/core/utils/currency_formatter.dart';
+import 'package:rendez/features/explore/widgets/bouncing_heart_button.dart';
+import 'package:rendez/features/place_detail/widgets/bill_breakdown_card.dart';
+import 'package:rendez/features/place_detail/widgets/menu_tab_view.dart';
+import 'package:rendez/features/place_detail/widgets/plan_invite_sheet.dart';
+import 'package:rendez/features/place_detail/widgets/price_report_sheet.dart';
 
 class PlaceDetailScreen extends ConsumerStatefulWidget {
   final Place place;

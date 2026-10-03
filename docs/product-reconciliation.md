@@ -1,5 +1,7 @@
 # Rendez Product and Engineering Reconciliation
 
+> Ghi chú repo 2026-10-03: đây là tài liệu phân tích/kế hoạch, có mô tả lịch sử. Lệnh và trạng thái hiện tại xem [README](../README.md). Đặc tả ở `docs/specs`; backend legacy đã được loại khỏi repo; các import Flutter sai đã được sửa.
+
 ## Scope and review basis
 
 This document reconciles the approved v1 SRS in `docs/SRS_PBL6.pdf` with the existing Flutter prototype under `mobile/`. It evaluates the product behavior rather than treating either artifact as automatically correct. Business rules, security constraints, data integrity, and required MVP capabilities take precedence over the SRS's suggested screen organization.

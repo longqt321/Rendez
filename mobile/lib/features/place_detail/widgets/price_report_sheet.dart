@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/constants/app_colors.dart';
+import 'package:rendez/core/constants/app_colors.dart';
 
 class PriceReportSheet extends StatefulWidget {
   final String placeName;

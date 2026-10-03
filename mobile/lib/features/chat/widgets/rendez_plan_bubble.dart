@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/data/mock_data.dart';
-import '../../../core/models/chat_models.dart';
-import '../../../core/providers/chat_providers.dart';
-import '../../place_detail/place_detail_screen.dart';
+import 'package:rendez/core/constants/app_colors.dart';
+import 'package:rendez/core/data/mock_data.dart';
+import 'package:rendez/core/models/chat_models.dart';
+import 'package:rendez/core/providers/chat_providers.dart';
+import 'package:rendez/features/place_detail/place_detail_screen.dart';
 
 class RendezPlanBubble extends ConsumerWidget {
   final String conversationId;

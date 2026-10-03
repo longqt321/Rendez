@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/mock_data.dart';
-import '../models/place.dart';
-import '../models/user.dart';
+import 'package:rendez/core/data/mock_data.dart';
+import 'package:rendez/core/models/place.dart';
+import 'package:rendez/core/models/user.dart';
 
 // Theme Mode Provider (System, Light, Dark)
 final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.system);

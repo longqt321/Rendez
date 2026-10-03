@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/models/bill_item.dart';
-import '../../../core/utils/currency_formatter.dart';
+import 'package:rendez/core/constants/app_colors.dart';
+import 'package:rendez/core/models/bill_item.dart';
+import 'package:rendez/core/utils/currency_formatter.dart';
 
 /// Chic Cafe Thermal Slip / Vintage Receipt style card
 /// Replaces corporate accounting table with an editorial lifestyle receipt

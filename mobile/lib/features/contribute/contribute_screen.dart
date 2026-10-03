@@ -2,11 +2,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/data/mock_data.dart';
-import '../../../core/models/user.dart';
-import '../../../core/providers/app_providers.dart';
-import '../../../core/utils/currency_formatter.dart';
+import 'package:rendez/core/constants/app_colors.dart';
+import 'package:rendez/core/data/mock_data.dart';
+import 'package:rendez/core/models/user.dart';
+import 'package:rendez/core/providers/app_providers.dart';
+import 'package:rendez/core/utils/currency_formatter.dart';
 
 class ContributeScreen extends ConsumerStatefulWidget {
   const ContributeScreen({super.key});
@@ -113,19 +113,26 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
                             builder: (ctx) => AlertDialog(
                               title: const Text(
                                 'Đề Xuất Quán Mới',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
                               content: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   TextField(
                                     controller: nameCtrl,
-                                    decoration: const InputDecoration(hintText: 'Tên quán...'),
+                                    decoration: const InputDecoration(
+                                      hintText: 'Tên quán...',
+                                    ),
                                   ),
                                   const SizedBox(height: 10),
                                   TextField(
                                     controller: addrCtrl,
-                                    decoration: const InputDecoration(hintText: 'Địa chỉ quán...'),
+                                    decoration: const InputDecoration(
+                                      hintText: 'Địa chỉ quán...',
+                                    ),
                                   ),
                                 ],
                               ),
@@ -135,19 +142,26 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
                                   child: const Text('Hủy'),
                                 ),
                                 ElevatedButton(
-                                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                  ),
                                   onPressed: () {
                                     if (nameCtrl.text.trim().isNotEmpty) {
                                       setState(() {
-                                        _selectedPlaceName = nameCtrl.text.trim();
-                                        _selectedPlaceAddress = addrCtrl.text.trim().isNotEmpty
+                                        _selectedPlaceName = nameCtrl.text
+                                            .trim();
+                                        _selectedPlaceAddress =
+                                            addrCtrl.text.trim().isNotEmpty
                                             ? addrCtrl.text.trim()
                                             : 'Chưa cập nhật địa chỉ';
                                       });
                                       Navigator.pop(ctx);
                                     }
                                   },
-                                  child: const Text('Thêm', style: TextStyle(color: Colors.white)),
+                                  child: const Text(
+                                    'Thêm',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
                                 ),
                               ],
                             ),

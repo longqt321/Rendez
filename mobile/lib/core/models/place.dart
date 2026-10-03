@@ -1,4 +1,4 @@
-import 'bill_item.dart';
+import 'package:rendez/core/models/bill_item.dart';
 
 class MenuItem {
   final String name;

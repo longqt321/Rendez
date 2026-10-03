@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/chat_models.dart';
+import 'package:rendez/core/models/chat_models.dart';
 
 class ChatNotifier extends StateNotifier<List<ChatConversation>> {
   ChatNotifier() : super(_initialConversations);

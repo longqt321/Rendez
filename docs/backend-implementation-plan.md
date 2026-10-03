@@ -1,5 +1,7 @@
 # Rendez backend implementation plan — Phase 3
 
+> Ghi chú repo 2026-10-03: đây là tài liệu phân tích/kế hoạch, có mô tả lịch sử. Lệnh và trạng thái hiện tại xem [README](../README.md). Đặc tả ở `docs/specs`; backend legacy đã được loại khỏi repo; các import Flutter sai đã được sửa.
+
 Documentation only. Milestones, files and commands below describe future implementation; they have not been implemented or executed as part of this planning task.
 
 ## 1. Executive summary

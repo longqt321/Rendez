@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/models/chat_models.dart';
-import '../../../../core/models/place.dart';
-import '../../../../core/providers/chat_providers.dart';
-import '../../../../core/utils/currency_formatter.dart';
-import '../../chat/chat_conversation_screen.dart';
+import 'package:rendez/core/constants/app_colors.dart';
+import 'package:rendez/core/models/chat_models.dart';
+import 'package:rendez/core/models/place.dart';
+import 'package:rendez/core/providers/chat_providers.dart';
+import 'package:rendez/core/utils/currency_formatter.dart';
+import 'package:rendez/features/chat/chat_conversation_screen.dart';
 
 class PlanInviteSheet extends ConsumerStatefulWidget {
   final Place place;

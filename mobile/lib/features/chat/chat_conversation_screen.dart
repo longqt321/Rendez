@@ -4,9 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/constants/app_colors.dart';
-import '../../core/providers/chat_providers.dart';
-import 'widgets/rendez_plan_bubble.dart';
+import 'package:rendez/core/constants/app_colors.dart';
+import 'package:rendez/core/providers/chat_providers.dart';
+import 'package:rendez/features/chat/widgets/rendez_plan_bubble.dart';
 
 class ChatConversationScreen extends ConsumerStatefulWidget {
   final String conversationId;

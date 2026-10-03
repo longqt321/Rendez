@@ -1,5 +1,7 @@
 # Rendez backend architecture
 
+> Ghi chú repo 2026-10-03: đây là tài liệu phân tích/kế hoạch, có mô tả lịch sử. Lệnh và trạng thái hiện tại xem [README](../README.md). Đặc tả ở `docs/specs`; backend legacy đã được loại khỏi repo; các import Flutter sai đã được sửa.
+
 Architecture and technology research — 21 September 2026. Status: recommended MVP architecture; no implementation is included.
 
 ## 1. Executive summary

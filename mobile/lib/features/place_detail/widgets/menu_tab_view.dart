@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/models/place.dart';
-import '../../../core/utils/currency_formatter.dart';
+import 'package:rendez/core/constants/app_colors.dart';
+import 'package:rendez/core/models/place.dart';
+import 'package:rendez/core/utils/currency_formatter.dart';
 
 class MenuTabView extends StatelessWidget {
   final List<MenuItem> menu;

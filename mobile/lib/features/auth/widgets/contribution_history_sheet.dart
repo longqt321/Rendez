@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/models/user.dart';
-import '../../../core/providers/app_providers.dart';
-import '../../../core/utils/currency_formatter.dart';
+import 'package:rendez/core/constants/app_colors.dart';
+import 'package:rendez/core/models/user.dart';
+import 'package:rendez/core/providers/app_providers.dart';
+import 'package:rendez/core/utils/currency_formatter.dart';
 
 class ContributionHistorySheet extends ConsumerWidget {
   const ContributionHistorySheet({super.key});

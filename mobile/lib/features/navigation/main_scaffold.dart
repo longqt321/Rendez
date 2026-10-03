@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/constants/app_colors.dart';
-import '../../core/providers/app_providers.dart';
-import '../auth/auth_profile_screen.dart';
-import '../explore/explore_screen.dart';
+import 'package:rendez/core/constants/app_colors.dart';
+import 'package:rendez/core/providers/app_providers.dart';
+import 'package:rendez/features/auth/auth_profile_screen.dart';
+import 'package:rendez/features/explore/explore_screen.dart';
 
 class MainScaffold extends ConsumerStatefulWidget {
   const MainScaffold({super.key});

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/providers/app_providers.dart';
+import 'package:rendez/core/constants/app_colors.dart';
+import 'package:rendez/core/providers/app_providers.dart';
 
 class VibeFilterItem {
   final String key;

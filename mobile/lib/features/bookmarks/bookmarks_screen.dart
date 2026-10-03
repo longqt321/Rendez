@@ -3,11 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/data/mock_data.dart';
-import '../../../core/providers/app_providers.dart';
-import '../../../core/utils/currency_formatter.dart';
-import '../place_detail/place_detail_screen.dart';
+import 'package:rendez/core/constants/app_colors.dart';
+import 'package:rendez/core/data/mock_data.dart';
+import 'package:rendez/core/providers/app_providers.dart';
+import 'package:rendez/core/utils/currency_formatter.dart';
+import 'package:rendez/features/place_detail/place_detail_screen.dart';
 
 class BookmarksScreen extends ConsumerWidget {
   const BookmarksScreen({super.key});
