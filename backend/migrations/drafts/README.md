@@ -1,5 +1,5 @@
 # Draft migrations
 
-Files here are design work, not executable Goose migrations. The API loads only `migrations/core` and currently requires schema version 2.
+Only migrations/core is executed by Goose. Keep unfinished SQL here.
 
-`00003_catalog.sql` was an untracked work-in-progress file before repository cleanup. Its contents are preserved here. Promote it only with the corresponding catalog implementation, schema-version update and PostgreSQL integration checks. Do not change already applied migrations or reset existing databases.
+Catalog migration 00003 was promoted unchanged to core for the first live Flutter/API integration. Migration 00004 adds email/password accounts, menu items and favorites. The API now requires schema version 4. Do not edit applied migrations or reset existing databases.

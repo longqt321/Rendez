@@ -1,4 +1,4 @@
-.PHONY: local-db local-recreate local-down migrate seed-dev run run-dev build test check test-integration verify-m0 verify-m1
+.PHONY: local-db local-recreate local-down migrate seed-dev seed-demo run run-dev build test check test-integration verify-m0 verify-m1
 
 # Disposable local credentials; an explicitly exported URL takes precedence.
 export DATABASE_URL ?= postgres://rendez:rendez_local@127.0.0.1:55432/rendez_core?sslmode=disable
@@ -16,6 +16,9 @@ local-down:
 
 migrate:
 	go run ./cmd/api -migrate
+
+seed-demo:
+	go run ./cmd/api -seed-demo
 
 seed-dev:
 	go run -tags=dev ./cmd/api -seed-dev

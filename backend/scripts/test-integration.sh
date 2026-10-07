@@ -4,21 +4,38 @@ set -eu
 cd "$(dirname "$0")/.."
 # Each invocation owns its containers/network; concurrent runs do not collide.
 project="rendez-test-$$"
+ocr_tools=""
 compose() {
     docker compose -f docker-compose.test.yml -p "$project" "$@"
 }
 cleanup() {
     status=$?
     trap - EXIT
-    if ! compose down --volumes --remove-orphans; then
+    if ! compose down --remove-orphans; then
         echo "Could not clean test containers for $project" >&2
         status=1
+    fi
+    if [ -n "$ocr_tools" ]; then
+        rm -f "$ocr_tools/tesseract"
+        rmdir "$ocr_tools"
     fi
     exit "$status"
 }
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
+
+# Use the same real Vietnamese OCR engine as the Docker demo; no mock OCR.
+if ! command -v tesseract >/dev/null 2>&1; then
+    docker compose -f docker-compose.yml build api
+    ocr_tools=$(mktemp -d)
+    cat > "$ocr_tools/tesseract" <<'OCR'
+#!/bin/sh
+exec docker run --rm -i --entrypoint tesseract rendez-local-api stdin stdout -l vie+eng --psm 6 < "$1"
+OCR
+    chmod +x "$ocr_tools/tesseract"
+    export PATH="$ocr_tools:$PATH"
+fi
 
 compose up -d --wait --wait-timeout 60 db
 address=$(compose port db 5432)

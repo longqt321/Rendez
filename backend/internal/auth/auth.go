@@ -48,6 +48,7 @@ func Register(r chi.Router, pool *pgxpool.Pool, appEnv string) {
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
+	registerAccounts(r, pool)
 	registerDev(r, pool, appEnv)
 }
 

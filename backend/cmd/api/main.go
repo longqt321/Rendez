@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,25 +19,27 @@ import (
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 	"rendez-backend/internal/auth"
+	"rendez-backend/internal/catalog"
 	"rendez-backend/internal/httpx"
 )
 
-const schemaVersion = 2
+const schemaVersion = 5
 
 func main() {
 	migrateOnly := flag.Bool("migrate", false, "apply Goose migrations and exit (run from backend/)")
+	seedDemo := flag.Bool("seed-demo", false, "seed local database catalog and demonstration admin")
 	seedDev := flag.Bool("seed-dev", false, "create development User/Admin fixtures (dev build only)")
 	flag.Parse()
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	if err := run(ctx, *migrateOnly, *seedDev); err != nil {
+	if err := run(ctx, *migrateOnly, *seedDev, *seedDemo); err != nil {
 		slog.Error("backend stopped", "error", err)
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context, migrateOnly, seedDev bool) error {
+func run(ctx context.Context, migrateOnly, seedDev, seedDemo bool) error {
 	appEnv := os.Getenv("APP_ENV")
 	switch appEnv {
 	case "development", "test", "production":
@@ -74,6 +77,19 @@ func run(ctx context.Context, migrateOnly, seedDev bool) error {
 	if migrateOnly {
 		return migrate(ctx, pool)
 	}
+	if seedDemo {
+		if appEnv != "development" {
+			return errors.New("demo seed requires APP_ENV=development")
+		}
+		if err := ready(ctx, pool); err != nil {
+			return err
+		}
+		id, err := auth.SeedDemoAdmin(ctx, pool)
+		if err != nil {
+			return err
+		}
+		return catalog.Seed(ctx, pool, id)
+	}
 	if seedDev {
 		if err := ready(ctx, pool); err != nil {
 			return errors.New("database is not ready; run migrations before seeding")
@@ -94,8 +110,8 @@ func run(ctx context.Context, migrateOnly, seedDev bool) error {
 	server := &http.Server{
 		Handler:           routes(ctx, pool, appEnv),
 		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       10 * time.Second,
-		WriteTimeout:      10 * time.Second,
+		ReadTimeout:       60 * time.Second,
+		WriteTimeout:      60 * time.Second,
 		IdleTimeout:       60 * time.Second,
 		ErrorLog:          slog.NewLogLogger(slog.Default().Handler(), slog.LevelError),
 	}
@@ -165,11 +181,28 @@ func routes(ctx context.Context, pool *pgxpool.Pool, appEnv string) http.Handler
 		httpx.JSON(w, http.StatusOK, map[string]string{"status": "ready"})
 	})
 	auth.Register(r, pool, appEnv)
+	catalog.Register(r, pool)
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusNotFound, "not_found", "Resource not found", false)
 	})
 	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusMethodNotAllowed, "method_not_allowed", "Method not allowed", false)
 	})
-	return r
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		origin := req.Header.Get("Origin")
+		if appEnv == "development" && origin != "" {
+			u, err := url.Parse(origin)
+			if err == nil && (u.Scheme == "http" || u.Scheme == "https") && (u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1") {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Set("Vary", "Origin")
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+				if req.Method == http.MethodOptions {
+					w.WriteHeader(http.StatusNoContent)
+					return
+				}
+			}
+		}
+		r.ServeHTTP(w, req)
+	})
 }

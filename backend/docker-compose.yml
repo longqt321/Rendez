@@ -16,5 +16,26 @@ services:
       interval: 2s
       timeout: 2s
       retries: 15
+  api:
+    image: rendez-local-api
+    build: .
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgres://rendez:rendez_local@db:5432/rendez_core?sslmode=disable
+      HTTP_ADDR: 0.0.0.0:8080
+      UPLOAD_DIR: /app/data/uploads
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - core_upload_data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8080/health/ready"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+    depends_on:
+      db:
+        condition: service_healthy
 volumes:
+  core_upload_data:
   core_postgres_data:
