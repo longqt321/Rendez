@@ -17,6 +17,7 @@ class RendezApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
+    const maxWidth = 1100.0;
 
     return MaterialApp(
       title: 'Rendez - Khám phá không gian & minh bạch giá',
@@ -29,10 +30,10 @@ class RendezApp extends ConsumerWidget {
           return child ?? const SizedBox.shrink();
         }
         return ColoredBox(
-          color: const Color(0xFF18181B),
+          color: Theme.of(context).colorScheme.surfaceContainer,
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 450),
+              constraints: BoxConstraints(maxWidth: maxWidth),
               child: child,
             ),
           ),

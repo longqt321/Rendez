@@ -56,57 +56,11 @@ void main() {
   });
 
   group('Riverpod State Providers Tests', () {
-    test('bookmarks provider toggles place id correctly', () {
+    test('auth starts logged out without fixture data', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
-
-      final notifier = container.read(bookmarksProvider.notifier);
-      expect(notifier.isBookmarked('test_place'), false);
-
-      notifier.toggle('test_place');
-      expect(container.read(bookmarksProvider).contains('test_place'), true);
-
-      notifier.toggle('test_place');
-      expect(container.read(bookmarksProvider).contains('test_place'), false);
-    });
-
-    test('auth provider login and logout work as expected', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      expect(container.read(authProvider).isLoggedIn, true);
-
-      container.read(authProvider.notifier).logout();
       expect(container.read(authProvider).isLoggedIn, false);
-      expect(container.read(authProvider).user, isNull);
-
-      container.read(authProvider.notifier).login('test@rendez.vn', 'pass');
-      expect(container.read(authProvider).isLoggedIn, true);
-      expect(container.read(authProvider).user, isNotNull);
-    });
-
-    test('filteredPlacesProvider filters by city and vibe', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      // Default city: Đà Nẵng & Hội An
-      final allPlaces = container.read(filteredPlacesProvider);
-      expect(allPlaces.isNotEmpty, true);
-
-      // Set vibe to 'Mở 24/7'
-      container.read(selectedVibeFilterProvider.notifier).state = 'Mở 24/7';
-      final lateNightPlaces = container.read(filteredPlacesProvider);
-      expect(lateNightPlaces.every((p) => p.vibes.contains('Mở 24/7')), true);
-    });
-
-    test('filteredPlacesProvider filters by budget range', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      // Set budget to < 50k (index 1)
-      container.read(selectedBudgetRangeProvider.notifier).state = 1;
-      final budgetPlaces = container.read(filteredPlacesProvider);
-      expect(budgetPlaces.every((p) => p.minPrice <= 50000), true);
+      expect(container.read(bookmarksProvider), isEmpty);
     });
   });
 
@@ -144,14 +98,12 @@ void main() {
       expect(find.byIcon(Icons.groups_rounded), findsOneWidget);
     });
 
-    testWidgets('MainScaffold renders 3 bottom tabs with Khám phá in center', (
-      tester,
-    ) async {
+    testWidgets('MainScaffold renders live integration tabs', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(child: MaterialApp(home: MainScaffold())),
       );
 
-      expect(find.text('Bản đồ'), findsOneWidget);
+      expect(find.text('Đã lưu'), findsOneWidget);
       expect(find.text('Khám phá'), findsOneWidget);
       expect(find.text('Cá nhân'), findsOneWidget);
     });

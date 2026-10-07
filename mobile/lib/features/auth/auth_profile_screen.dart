@@ -1,673 +1,318 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:rendez/features/admin/admin_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:rendez/core/constants/app_colors.dart';
 import 'package:rendez/core/providers/app_providers.dart';
-import 'package:rendez/core/providers/chat_providers.dart';
-import 'package:rendez/features/bookmarks/bookmarks_screen.dart';
-import 'package:rendez/features/chat/chat_list_screen.dart';
-import 'package:rendez/features/contribute/contribute_screen.dart';
-import 'package:rendez/features/auth/widgets/contribution_history_sheet.dart';
 
 class AuthProfileScreen extends ConsumerStatefulWidget {
   const AuthProfileScreen({super.key});
-
   @override
   ConsumerState<AuthProfileScreen> createState() => _AuthProfileScreenState();
 }
 
 class _AuthProfileScreenState extends ConsumerState<AuthProfileScreen> {
-  final _loginEmailController = TextEditingController(
-    text: 'longtran@rendez.vn',
-  );
-  final _loginPasswordController = TextEditingController(text: '12345678');
-
+  final _form = GlobalKey<FormState>();
+  final _name = TextEditingController(),
+      _email = TextEditingController(),
+      _password = TextEditingController();
+  bool _register = false, _busy = false, _showPassword = false;
+  String? _error;
   @override
   void dispose() {
-    _loginEmailController.dispose();
-    _loginPasswordController.dispose();
+    _name.dispose();
+    _email.dispose();
+    _password.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit({bool logout = false}) async {
+    if (_busy || (!logout && !(_form.currentState?.validate() ?? false))) {
+      return;
+    }
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final auth = ref.read(authProvider.notifier);
+      if (logout) {
+        await auth.logout();
+      } else if (_register) {
+        await auth.register(
+          _name.text.trim(),
+          _email.text.trim(),
+          _password.text,
+        );
+      } else {
+        await auth.login(_email.text.trim(), _password.text);
+      }
+      _password.clear();
+      if (mounted && !logout) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Đăng nhập thành công. Bạn có thể lưu địa điểm và đóng góp ảnh.',
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      if (mounted) setState(() => _error = '$error');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-
+    final auth = ref.watch(authProvider), theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        title: Text(authState.isLoggedIn ? 'Cá nhân' : 'Đăng Nhập / Đăng Ký'),
-        centerTitle: false,
+        title: Text(auth.isLoggedIn ? 'Góc của bạn' : 'Tài khoản Rendez'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: authState.isLoggedIn
-            ? _buildLoggedInView(context)
-            : _buildLoggedOutView(context),
-      ),
-    );
-  }
-
-  Widget _buildLoggedInView(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final authState = ref.watch(authProvider);
-    final user = authState.user;
-    final bookmarks = ref.watch(bookmarksProvider);
-    final contributions = ref.watch(contributionsProvider);
-    final unreadCount = ref.watch(totalUnreadMessagesProvider);
-    final themeMode = ref.watch(themeModeProvider);
-
-    return Column(
-      children: [
-        // Profile Info Card
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isDark ? AppColors.darkPaperBorder : AppColors.neutral200,
-            ),
-          ),
-          child: Row(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: ListView(
+            padding: const EdgeInsets.all(24),
             children: [
               Container(
-                width: 58,
-                height: 58,
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  image: DecorationImage(
-                    image: CachedNetworkImageProvider(
-                      user?.avatarUrl ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',
-                    ),
-                    fit: BoxFit.cover,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF6D28D9), Color(0xFFAD46C5)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
+                  borderRadius: BorderRadius.circular(28),
                 ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 36,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(height: 16),
                     Text(
-                      user?.name ?? 'Người Dùng Rendez',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: isDark
-                            ? AppColors.darkNeutral900
-                            : AppColors.neutral900,
+                      auth.isLoggedIn
+                          ? 'Chào ${auth.user!.name}!'
+                          : 'Chỗ hay, bạn giữ.\nGiá tốt, bạn chia sẻ.',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 10),
                     Text(
-                      user?.email ?? '',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark
-                            ? AppColors.darkNeutral500
-                            : AppColors.neutral500,
-                      ),
+                      auth.isLoggedIn ? auth.user!.email : 'Lưu địa điểm yêu thích và cùng cộng đồng cập nhật giá.',
+                      style: const TextStyle(color: Colors.white, height: 1.5),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 14),
-
-        // Stats Counters (Interactive)
-        Row(
-          children: [
-            Expanded(
-              child: Material(
-                color: isDark ? AppColors.darkSurface : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => const ContributionHistorySheet(),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isDark
-                            ? AppColors.darkPaperBorder
-                            : AppColors.neutral200,
-                      ),
-                    ),
-                    child: Column(
+              const SizedBox(height: 24),
+              if (auth.isLoggedIn) ...[
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
                       children: [
-                        Text(
-                          '${contributions.length}',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.primary,
-                          ),
+                        Icon(
+                          Icons.bookmarks_rounded,
+                          color: theme.colorScheme.primary,
+                          size: 32,
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Đã đóng góp',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: isDark
-                                ? AppColors.darkNeutral500
-                                : AppColors.neutral500,
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${ref.watch(bookmarksProvider).length} địa điểm đã lưu',
+                                style: theme.textTheme.titleMedium,
+                              ),
+                              const Text('Xem lại ở mục Đã lưu'),
+                            ],
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Material(
-                color: isDark ? AppColors.darkSurface : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const BookmarksScreen(),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isDark
-                            ? AppColors.darkPaperBorder
-                            : AppColors.neutral200,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          '${bookmarks.length}',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            color: isDark
-                                ? AppColors.darkNeutral900
-                                : AppColors.neutral900,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Địa điểm đã lưu',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: isDark
-                                ? AppColors.darkNeutral500
-                                : AppColors.neutral500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 16),
-
-        // Menu actions
-        Material(
-          color: isDark ? AppColors.darkSurface : Colors.white,
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(
-              color: isDark ? AppColors.darkPaperBorder : AppColors.neutral200,
-            ),
-          ),
-          child: Column(
-            children: [
-              ListTile(
-                leading: const Icon(
-                  Icons.bookmark_outline_rounded,
-                  size: 22,
-                  color: AppColors.primary,
-                ),
-                title: const Text(
-                  'Địa điểm đã lưu',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                ),
-                subtitle: Text(
-                  '${bookmarks.length} quán trong danh sách',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.neutral500,
-                  ),
-                ),
-                trailing: const Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: AppColors.neutral400,
-                ),
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const BookmarksScreen()),
-                  );
-                },
-              ),
-              const Divider(height: 1, color: AppColors.neutral200),
-              ListTile(
-                leading: const Icon(
-                  Icons.chat_bubble_outline_rounded,
-                  size: 22,
-                  color: AppColors.primary,
-                ),
-                title: const Text(
-                  'Hộp thư & Kèo hẹn',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                ),
-                subtitle: Text(
-                  unreadCount > 0
-                      ? '$unreadCount tin nhắn chưa đọc'
-                      : 'Trò chuyện & rủ bạn đi quán',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.neutral500,
-                  ),
-                ),
-                trailing: const Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: AppColors.neutral400,
-                ),
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ChatListScreen()),
-                  );
-                },
-              ),
-              const Divider(height: 1, color: AppColors.neutral200),
-              ListTile(
-                leading: const Icon(
-                  Icons.add_location_alt_outlined,
-                  size: 22,
-                  color: AppColors.primary,
-                ),
-                title: const Text(
-                  'Đóng góp quán mới',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                ),
-                subtitle: const Text(
-                  'Chia sẻ menu & hóa đơn cho Rendez',
-                  style: TextStyle(fontSize: 11, color: AppColors.neutral500),
-                ),
-                trailing: const Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: AppColors.neutral400,
-                ),
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ContributeScreen()),
-                  );
-                },
-              ),
-              const Divider(height: 1, color: AppColors.neutral200),
-              ListTile(
-                leading: const Icon(
-                  Icons.history_edu_rounded,
-                  size: 22,
-                  color: AppColors.neutral700,
-                ),
-                title: const Text(
-                  'Lịch sử đóng góp & Trạng thái duyệt',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                ),
-                trailing: const Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: AppColors.neutral400,
-                ),
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) => const ContributionHistorySheet(),
-                  );
-                },
-              ),
-
-              Divider(
-                height: 1,
-                color: isDark
-                    ? AppColors.darkPaperBorder
-                    : AppColors.neutral200,
-              ),
-              ListTile(
-                leading: Icon(
-                  themeMode == ThemeMode.dark
-                      ? Icons.dark_mode_rounded
-                      : (themeMode == ThemeMode.light
-                            ? Icons.light_mode_rounded
-                            : Icons.brightness_auto_rounded),
-                  size: 22,
-                  color: AppColors.primary,
-                ),
-                title: const Text(
-                  'Giao diện ứng dụng (Dark Mode)',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                ),
-                subtitle: Text(
-                  themeMode == ThemeMode.system
-                      ? 'Tự động theo hệ điều hành'
-                      : (themeMode == ThemeMode.dark
-                            ? 'Giao diện Tối (Espresso Noir)'
-                            : 'Giao diện Sáng (Tạp chí ngà ấm)'),
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isDark
-                        ? AppColors.darkNeutral500
-                        : AppColors.neutral500,
-                  ),
-                ),
-                trailing: Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: isDark
-                      ? AppColors.darkNeutral500
-                      : AppColors.neutral400,
-                ),
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  _showThemeModeSheet(context, ref, themeMode);
-                },
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Logout Button
-        SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.destructiveLight),
-              backgroundColor: AppColors.destructiveLight.withValues(
-                alpha: 0.5,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            onPressed: () {
-              ref.read(authProvider.notifier).logout();
-            },
-            child: const Text(
-              'Đăng Xuất Khỏi Tài Khoản',
-              style: TextStyle(
-                color: AppColors.destructive,
-                fontWeight: FontWeight.w800,
-                fontSize: 13.5,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLoggedOutView(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.neutral200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Đăng Nhập Rendez',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: AppColors.neutral900,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Đăng nhập để khám phá quán, lưu địa điểm và kết nối bạn bè.',
-            style: TextStyle(fontSize: 12, color: AppColors.neutral500),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'Email đăng nhập',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 6),
-          TextField(
-            controller: _loginEmailController,
-            style: const TextStyle(fontSize: 13),
-            decoration: const InputDecoration(hintText: 'email@domain.com'),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Mật khẩu',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 6),
-          TextField(
-            controller: _loginPasswordController,
-            obscureText: true,
-            style: const TextStyle(fontSize: 13),
-            decoration: const InputDecoration(hintText: '••••••••'),
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              onPressed: () {
-                ref
-                    .read(authProvider.notifier)
-                    .login(
-                      _loginEmailController.text,
-                      _loginPasswordController.text,
-                    );
-              },
-              child: const Text(
-                'Đăng Nhập Ngay',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showThemeModeSheet(
-    BuildContext context,
-    WidgetRef ref,
-    ThemeMode currentMode,
-  ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        final options = [
-          (
-            mode: ThemeMode.system,
-            title: 'Theo cài đặt hệ thống',
-            subtitle: 'Tự động đồng bộ với chế độ Sáng / Tối của điện thoại',
-            icon: Icons.brightness_auto_rounded,
-          ),
-          (
-            mode: ThemeMode.light,
-            title: 'Giao diện Sáng (Tạp chí ngà ấm)',
-            subtitle: 'Phong cách Editorial Lifestyle với nền giấy ấm',
-            icon: Icons.light_mode_rounded,
-          ),
-          (
-            mode: ThemeMode.dark,
-            title: 'Giao diện Tối (Espresso Noir)',
-            subtitle: 'Tông than ấm dịu mắt ban đêm, tiết kiệm pin OLED',
-            icon: Icons.dark_mode_rounded,
-          ),
-        ];
-
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.darkNeutral500
-                          : AppColors.neutral300,
-                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
+                if (auth.role == 'admin') ...[
+                  FilledButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AdminScreen()),
+                    ),
+                    icon: const Icon(Icons.admin_panel_settings_outlined),
+                    label: const Text('Quản trị địa điểm và duyệt đóng góp'),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                OutlinedButton.icon(
+                  onPressed: _busy ? null : () => _submit(logout: true),
+                  icon: const Icon(Icons.logout_rounded),
+                  label: const Text('Đăng xuất'),
+                ),
+              ] else ...[
                 Text(
-                  'Chế Độ Hiển Thị',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: isDark
-                        ? AppColors.darkNeutral900
-                        : AppColors.neutral900,
+                  _register ? 'Tạo tài khoản của bạn' : 'Chào bạn trở lại',
+                  style: theme.textTheme.titleLarge,
+                ),
+                const SizedBox(height: 16),
+                AutofillGroup(
+                  child: Form(
+                    key: _form,
+                    child: Column(
+                      children: [
+                        if (_register) ...[
+                          TextFormField(
+                            controller: _name,
+                            enabled: !_busy,
+                            textCapitalization: TextCapitalization.words,
+                            autofillHints: const [AutofillHints.name],
+                            textInputAction: TextInputAction.next,
+                            decoration: const InputDecoration(
+                              labelText: 'Tên hiển thị',
+                              prefixIcon: Icon(Icons.person_outline),
+                            ),
+                            validator: (value) =>
+                                value == null || value.trim().isEmpty
+                                ? 'Nhập tên để mọi người nhận ra bạn'
+                                : value.trim().length > 200
+                                ? 'Tên tối đa 200 ký tự'
+                                : null,
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        TextFormField(
+                          controller: _email,
+                          enabled: !_busy,
+                          keyboardType: TextInputType.emailAddress,
+                          autofillHints: const [AutofillHints.email],
+                          textInputAction: TextInputAction.next,
+                          decoration: const InputDecoration(
+                            labelText: 'Email',
+                            prefixIcon: Icon(Icons.alternate_email),
+                          ),
+                          validator: (value) =>
+                              value == null ||
+                                  !RegExp(r'^[^\s@]+@[^\s@]+$')
+                                      .hasMatch(value.trim())
+                              ? 'Nhập email hợp lệ'
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _password,
+                          enabled: !_busy,
+                          obscureText: !_showPassword,
+                          autofillHints: [
+                            _register
+                                ? AutofillHints.newPassword
+                                : AutofillHints.password,
+                          ],
+                          decoration: InputDecoration(
+                            labelText: 'Mật khẩu',
+                            helperText: _register ? 'Từ 8 đến 256 ký tự' : null,
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              tooltip: _showPassword
+                                  ? 'Ẩn mật khẩu'
+                                  : 'Hiện mật khẩu',
+                              onPressed: () => setState(
+                                () => _showPassword = !_showPassword,
+                              ),
+                              icon: Icon(
+                                _showPassword
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                              ),
+                            ),
+                          ),
+                          validator: (value) =>
+                              value == null ||
+                                  value.length < 8 ||
+                                  value.length > 256
+                              ? 'Mật khẩu cần từ 8 đến 256 ký tự'
+                              : null,
+                          onFieldSubmitted: (_) => _submit(),
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            onPressed: _busy ? null : _submit,
+                            child: Text(
+                              _busy
+                                  ? 'Đang xử lý…'
+                                  : _register
+                                  ? 'Tạo tài khoản'
+                                  : 'Đăng nhập',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: _busy
+                              ? null
+                              : () => setState(() {
+                                  _register = !_register;
+                                  _error = null;
+                                  _form.currentState?.reset();
+                                }),
+                          child: Text(
+                            _register
+                                ? 'Đã có tài khoản? Đăng nhập'
+                                : 'Chưa có tài khoản? Đăng ký',
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                ...options.map((opt) {
-                  final isSelected = opt.mode == currentMode;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Material(
-                      color: isSelected
-                          ? (isDark
-                                ? AppColors.primary.withValues(alpha: 0.15)
-                                : AppColors.primarySubtle)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
-                      child: ListTile(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        leading: Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppColors.primary
-                                : (isDark
-                                      ? AppColors.darkNeutral100
-                                      : AppColors.neutral100),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            opt.icon,
-                            size: 20,
-                            color: isSelected
-                                ? Colors.white
-                                : (isDark
-                                      ? AppColors.darkNeutral600
-                                      : AppColors.neutral600),
-                          ),
-                        ),
-                        title: Text(
-                          opt.title,
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: isSelected
-                                ? FontWeight.w800
-                                : FontWeight.w600,
-                            color: isSelected
-                                ? (isDark
-                                      ? const Color(0xFFFBBF24)
-                                      : AppColors.primaryText)
-                                : (isDark
-                                      ? AppColors.darkNeutral900
-                                      : AppColors.neutral900),
-                          ),
-                        ),
-                        subtitle: Text(
-                          opt.subtitle,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: isDark
-                                ? AppColors.darkNeutral500
-                                : AppColors.neutral500,
-                          ),
-                        ),
-                        trailing: isSelected
-                            ? const Icon(
-                                Icons.check_circle_rounded,
-                                color: AppColors.primary,
-                              )
-                            : null,
-                        onTap: () {
-                          HapticFeedback.mediumImpact();
-                          SystemSound.play(SystemSoundType.click);
-                          ref.read(themeModeProvider.notifier).state = opt.mode;
-                          Navigator.pop(ctx);
-                        },
-                      ),
-                    ),
-                  );
-                }),
               ],
-            ),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    _error!,
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
+                ),
+              const SizedBox(height: 28),
+              Text(
+                'Giao diện theo cách bạn thích',
+                style: theme.textTheme.titleMedium,
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<ThemeMode>(
+                initialValue: ref.watch(themeModeProvider),
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.palette_outlined),
+                  labelText: 'Chế độ hiển thị',
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: ThemeMode.system,
+                    child: Text('Theo hệ thống'),
+                  ),
+                  DropdownMenuItem(value: ThemeMode.light, child: Text('Sáng')),
+                  DropdownMenuItem(value: ThemeMode.dark, child: Text('Tối')),
+                ],
+                onChanged: (mode) {
+                  if (mode != null) {
+                    ref.read(themeModeProvider.notifier).state = mode;
+                  }
+                },
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

@@ -1,678 +1,465 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:rendez/core/constants/app_colors.dart';
-import 'package:rendez/core/data/mock_data.dart';
-import 'package:rendez/core/models/user.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:rendez/core/api/api_client.dart';
 import 'package:rendez/core/providers/app_providers.dart';
-import 'package:rendez/core/utils/currency_formatter.dart';
+import 'package:rendez/features/admin/review_screen.dart';
+import 'package:rendez/features/auth/auth_profile_screen.dart';
+import 'package:rendez/core/widgets/state_message.dart';
 
 class ContributeScreen extends ConsumerStatefulWidget {
-  const ContributeScreen({super.key});
-
+  final VoidCallback? onSignIn;
+  final String? initialPlaceId;
+  const ContributeScreen({super.key, this.onSignIn, this.initialPlaceId});
   @override
   ConsumerState<ContributeScreen> createState() => _ContributeScreenState();
 }
 
-class _ContributeItem {
-  final TextEditingController nameController;
-  final TextEditingController priceController;
-
-  _ContributeItem({String name = '', String price = ''})
-    : nameController = TextEditingController(text: name),
-      priceController = TextEditingController(text: price);
-
-  void dispose() {
-    nameController.dispose();
-    priceController.dispose();
-  }
-}
-
 class _ContributeScreenState extends ConsumerState<ContributeScreen> {
-  String _selectedPlaceName = 'The Hideout Roastery';
-  String _selectedPlaceAddress =
-      '72/24 Nguyễn Thị Minh Khai, Hải Châu, Đà Nẵng';
-  int _guestsCount = 2;
-  bool _hasBillPhoto = true;
-
-  final List<_ContributeItem> _items = [
-    _ContributeItem(name: 'Cold Brew Cam Sả', price: '55000'),
-    _ContributeItem(name: 'Latte Hạnh Nhân Nóng', price: '48000'),
-    _ContributeItem(name: 'Bánh Croissant Bơ Pháp', price: '35000'),
-  ];
+  final _name = TextEditingController();
+  final _address = TextEditingController();
+  String? _placeId, _city, _category;
+  String _kind = 'menu_photo';
+  DateTime _captured = DateTime.now();
+  List<({String name, Uint8List bytes})> _images = [];
+  bool _busy = false;
+  String? _message;
+  @override
+  void initState() {
+    super.initState();
+    _placeId = widget.initialPlaceId;
+  }
 
   @override
   void dispose() {
-    for (final item in _items) {
-      item.dispose();
-    }
+    _name.dispose();
+    _address.dispose();
     super.dispose();
   }
 
-  int get _totalAmount {
-    int sum = 0;
-    for (final item in _items) {
-      final p =
-          int.tryParse(
-            item.priceController.text
-                .replaceAll('.', '')
-                .replaceAll('đ', '')
-                .trim(),
-          ) ??
-          0;
-      sum += p;
+  Future<void> _pick({bool camera = false}) async {
+    try {
+      final picker = ImagePicker();
+      final List<XFile> files;
+      if (camera) {
+        final file = await picker.pickImage(source: ImageSource.camera);
+        files = file == null ? [] : [file];
+      } else {
+        files = await picker.pickMultiImage();
+      }
+      if (files.isEmpty) return;
+      if (files.length > 5) throw const ApiException('Chọn tối đa 5 ảnh');
+      final images = <({String name, Uint8List bytes})>[];
+      for (final file in files) {
+        if (await file.length() >= 10 * 1024 * 1024) {
+          throw const ApiException('Mỗi ảnh phải nhỏ hơn 10MB');
+        }
+        images.add((name: file.name, bytes: await file.readAsBytes()));
+      }
+      if (mounted) {
+        setState(() {
+          _images = images;
+          _message = null;
+        });
+      }
+    } catch (error) {
+      if (mounted) setState(() => _message = '$error');
     }
-    return sum;
   }
 
-  int get _costPerPerson =>
-      _guestsCount > 0 ? (_totalAmount / _guestsCount).round() : _totalAmount;
+  Future<void> _submit() async {
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    try {
+      if (_images.isEmpty) {
+        throw const ApiException('Chọn ảnh menu hoặc hóa đơn');
+      }
+      if (_placeId == null &&
+          (_name.text.trim().isEmpty ||
+              _address.text.trim().isEmpty ||
+              _city == null ||
+              _category == null)) {
+        throw const ApiException('Nhập đủ thông tin địa điểm mới');
+      }
+      await ref.read(apiProvider).upload({
+        'type': _kind,
+        'captured_at': _captured.toUtc().toIso8601String(),
+        'place_id': ?_placeId,
+        if (_placeId == null) ...{
+          'place_name': _name.text.trim(),
+          'address': _address.text.trim(),
+          'city_code': _city!,
+          'category_code': _category!,
+        },
+      }, _images);
+      ref.invalidate(liveContributionsProvider);
+      ref.invalidate(adminContributionsProvider);
+      if (mounted) {
+        setState(() {
+          _images = [];
+          _message = 'Đã lưu đóng góp, đang chờ Admin duyệt';
+        });
+      }
+    } catch (error) {
+      if (mounted) setState(() => _message = '$error');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (!ref.watch(authProvider).isLoggedIn) {
+      return Scaffold(
+        body: StateMessage(
+          icon: Icons.add_photo_alternate_outlined,
+          title: 'Giúp mọi người biết giá trước khi đi',
+          message: 'Chia sẻ ảnh menu hoặc hóa đơn. Đóng góp được kiểm tra trước khi công khai; ảnh hóa đơn luôn giữ riêng.',
+          actionLabel: 'Đăng nhập để đóng góp',
+          onAction:
+              widget.onSignIn ??
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AuthProfileScreen()),
+              ),
+        ),
+      );
+    }
+    final isAdmin = ref.watch(authProvider).role == 'admin';
+    final places = isAdmin
+        ? ref
+              .watch(adminPlacesProvider)
+              .whenData(
+                (items) => items
+                    .map(
+                      (p) => (
+                        id: p['id'] as String,
+                        name:
+                            '${p['name']} (${switch (p['publication_state']) {
+                              'published' => 'Công khai',
+                              'hidden' => 'Đang ẩn',
+                              _ => 'Bản nháp',
+                            }})',
+                      ),
+                    )
+                    .toList(),
+              )
+        : ref
+              .watch(placesProvider)
+              .whenData(
+                (items) => items.map((p) => (id: p.id, name: p.name)).toList(),
+              );
+    final lookups = ref.watch(lookupsProvider);
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
-      appBar: AppBar(
-        title: const Text('Đóng Góp Hóa Đơn & Giá'),
-        centerTitle: false,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Target Place Card
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.neutral200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'ĐỊA ĐIỂM BẠN ĐÃ TRẢI NGHIỆM',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.neutral500,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          final nameCtrl = TextEditingController();
-                          final addrCtrl = TextEditingController();
-                          showDialog(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text(
-                                'Đề Xuất Quán Mới',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  TextField(
-                                    controller: nameCtrl,
-                                    decoration: const InputDecoration(
-                                      hintText: 'Tên quán...',
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  TextField(
-                                    controller: addrCtrl,
-                                    decoration: const InputDecoration(
-                                      hintText: 'Địa chỉ quán...',
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(ctx),
-                                  child: const Text('Hủy'),
-                                ),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primary,
-                                  ),
-                                  onPressed: () {
-                                    if (nameCtrl.text.trim().isNotEmpty) {
-                                      setState(() {
-                                        _selectedPlaceName = nameCtrl.text
-                                            .trim();
-                                        _selectedPlaceAddress =
-                                            addrCtrl.text.trim().isNotEmpty
-                                            ? addrCtrl.text.trim()
-                                            : 'Chưa cập nhật địa chỉ';
-                                      });
-                                      Navigator.pop(ctx);
-                                    }
-                                  },
-                                  child: const Text(
-                                    'Thêm',
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          '+ Thêm quán mới',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  DropdownButtonFormField<String>(
-                    initialValue:
-                        MockData.places.any((p) => p.name == _selectedPlaceName)
-                        ? _selectedPlaceName
-                        : null,
-                    hint: Text(
-                      _selectedPlaceName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.neutral900,
-                      ),
-                    ),
-                    decoration: const InputDecoration(
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                    ),
-                    items: MockData.places.map((p) {
-                      return DropdownMenuItem(
-                        value: p.name,
-                        child: Text(
-                          p.name,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        final found = MockData.places.firstWhere(
-                          (p) => p.name == val,
-                        );
-                        setState(() {
-                          _selectedPlaceName = found.name;
-                          _selectedPlaceAddress = found.address;
-                        });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_rounded,
-                        size: 13,
-                        color: AppColors.neutral500,
-                      ),
-                      const SizedBox(width: 3),
-                      Expanded(
-                        child: Text(
-                          _selectedPlaceAddress,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.neutral500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Bill Photo Uploader
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.neutral200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'ẢNH CHỤP HÓA ĐƠN GỐC',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.neutral500,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() => _hasBillPhoto = !_hasBillPhoto);
-                    },
-                    child: Container(
-                      height: 140,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: AppColors.neutral100,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: _hasBillPhoto
-                              ? AppColors.verified
-                              : AppColors.neutral300,
-                          width: _hasBillPhoto ? 2 : 1,
-                        ),
-                      ),
-                      child: _hasBillPhoto
-                          ? Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: CachedNetworkImage(
-                                    imageUrl: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=600&auto=format&fit=crop&q=80',
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                                Container(
-                                  alignment: Alignment.bottomRight,
-                                  padding: const EdgeInsets.all(8),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.7,
-                                      ),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Text(
-                                      'Chạm để đổi ảnh',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : const Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.add_a_photo_outlined,
-                                  size: 32,
-                                  color: AppColors.neutral400,
-                                ),
-                                SizedBox(height: 6),
-                                Text(
-                                  'Chụp hoặc tải ảnh hóa đơn rõ ràng',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.neutral600,
-                                  ),
-                                ),
-                                Text(
-                                  'OCR sẽ tự động đọc món và giá tiền',
-                                  style: TextStyle(
-                                    fontSize: 10.5,
-                                    color: AppColors.neutral400,
-                                  ),
-                                ),
-                              ],
-                            ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Number of guests counter
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.neutral200),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Column(
+      appBar: AppBar(title: const Text('Chia sẻ giá, giúp cả cộng đồng')),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 760),
+          child: ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Icon(
+                        Icons.auto_awesome_rounded,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(height: 8),
                       Text(
-                        'Số người cùng đi trải nghiệm',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.neutral900,
-                        ),
+                        'Một tấm ảnh, nhiều lựa chọn tốt hơn',
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
-                      Text(
-                        'Dùng để tính mức chi phí trung bình / người',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.neutral500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      IconButton(
-                        style: IconButton.styleFrom(
-                          backgroundColor: AppColors.neutral100,
-                        ),
-                        icon: const Icon(Icons.remove, size: 16),
-                        onPressed: () {
-                          if (_guestsCount > 1) {
-                            setState(() => _guestsCount--);
-                          }
-                        },
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          '$_guestsCount',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        style: IconButton.styleFrom(
-                          backgroundColor: AppColors.neutral100,
-                        ),
-                        icon: const Icon(Icons.add, size: 16),
-                        onPressed: () => setState(() => _guestsCount++),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Items breakdown editor
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.neutral200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
+                      const SizedBox(height: 8),
                       const Text(
-                        'BẢNG MÓN ĂN & GIÁ TIỀN BÓC TÁCH',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.neutral500,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          setState(() {
-                            _items.add(_ContributeItem());
-                          });
-                        },
-                        child: const Text(
-                          '+ Thêm món',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                          ),
-                        ),
+                        'Ảnh menu đã duyệt giúp mọi người tham khảo giá. Ảnh hóa đơn giữ riêng; hãy che thông tin cá nhân trước khi gửi.',
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-
-                  ..._items.asMap().entries.map((entry) {
-                    final idx = entry.key;
-                    final item = entry.value;
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: TextField(
-                              controller: item.nameController,
-                              style: const TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              decoration: const InputDecoration(
-                                hintText: 'Tên món...',
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            flex: 2,
-                            child: TextField(
-                              controller: item.priceController,
-                              keyboardType: TextInputType.number,
-                              onChanged: (_) => setState(() {}),
-                              style: const TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.primary,
-                              ),
-                              decoration: const InputDecoration(
-                                hintText: 'Giá (VNĐ)',
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                              ),
-                            ),
-                          ),
-                          if (_items.length > 1)
-                            IconButton(
-                              icon: const Icon(
-                                Icons.close,
-                                size: 16,
-                                color: AppColors.neutral400,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _items.removeAt(idx);
-                                });
-                              },
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                '1. Chọn địa điểm',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 12),
+              places.when(
+                loading: () => const LinearProgressIndicator(),
+                error: (e, _) => TextButton(
+                  onPressed: () {
+                    if (isAdmin) {
+                      ref.invalidate(adminPlacesProvider);
+                    } else {
+                      ref.invalidate(placesProvider);
+                    }
+                  },
+                  child: Text('$e — thử lại'),
+                ),
+                data: (data) => DropdownButtonFormField<String>(
+                  initialValue: _placeId ?? '',
+                  decoration: const InputDecoration(labelText: 'Địa điểm'),
+                  items: [
+                    const DropdownMenuItem(
+                      value: '',
+                      child: Text('Đề xuất địa điểm mới'),
+                    ),
+                    if (_placeId != null && !data.any((p) => p.id == _placeId))
+                      DropdownMenuItem(
+                        value: _placeId,
+                        enabled: false,
+                        child: const Text('Địa điểm không còn khả dụng'),
+                      ),
+                    ...data.map(
+                      (p) => DropdownMenuItem(
+                        value: p.id,
+                        child: Text(p.name, overflow: TextOverflow.ellipsis),
+                      ),
+                    ),
+                  ],
+                  isExpanded: true,
+                  onChanged: _busy
+                      ? null
+                      : (v) => setState(() => _placeId = v == '' ? null : v),
+                ),
+              ),
+              if (_placeId == null) ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _name,
+                  enabled: !_busy,
+                  decoration: const InputDecoration(
+                    labelText: 'Tên địa điểm mới',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _address,
+                  enabled: !_busy,
+                  decoration: const InputDecoration(labelText: 'Địa chỉ'),
+                ),
+                const SizedBox(height: 12),
+                lookups.when(
+                  loading: () => const LinearProgressIndicator(),
+                  error: (e, _) => TextButton(
+                    onPressed: () => ref.invalidate(lookupsProvider),
+                    child: Text('$e — thử lại'),
+                  ),
+                  data: (data) => Column(
+                    children: [
+                      DropdownButtonFormField<String>(
+                        initialValue: _city,
+                        decoration: const InputDecoration(
+                          labelText: 'Thành phố',
+                        ),
+                        items: [
+                          for (final item in data['cities'])
+                            DropdownMenuItem(
+                              value: item['code'] as String,
+                              child: Text(item['name'] as String),
                             ),
                         ],
+                        onChanged: _busy
+                            ? null
+                            : (v) => setState(() => _city = v),
                       ),
-                    );
-                  }),
-
-                  const SizedBox(height: 12),
-
-                  // Realtime calculation box
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.primarySubtle,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.primaryLight),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Chi phí / người:',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: AppColors.neutral600,
-                              ),
-                            ),
-                            Text(
-                              '~${CurrencyFormatter.format(_costPerPerson)}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ],
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: _category,
+                        decoration: const InputDecoration(
+                          labelText: 'Loại hình',
                         ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            const Text(
-                              'Tổng cộng hóa đơn:',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: AppColors.neutral600,
-                              ),
+                        items: [
+                          for (final item in data['categories'])
+                            DropdownMenuItem(
+                              value: item['code'] as String,
+                              child: Text(item['name'] as String),
                             ),
-                            Text(
-                              CurrencyFormatter.format(_totalAmount),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.neutral900,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                        ],
+                        onChanged: _busy
+                            ? null
+                            : (v) => setState(() => _category = v),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                initialValue: _kind,
+                decoration: const InputDecoration(labelText: 'Loại ảnh'),
+                items: const [
+                  DropdownMenuItem(
+                    value: 'menu_photo',
+                    child: Text('Ảnh menu'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'bill_photo',
+                    child: Text('Ảnh hóa đơn'),
+                  ),
+                ],
+                onChanged: _busy ? null : (v) => setState(() => _kind = v!),
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  'Ngày chụp: ${_captured.day}/${_captured.month}/${_captured.year}',
+                ),
+                trailing: const Icon(Icons.calendar_month),
+                onTap: _busy
+                    ? null
+                    : () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: _captured,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime.now(),
+                        );
+                        if (date != null && mounted) {
+                          setState(() => _captured = date);
+                        }
+                      },
+              ),
+              const SizedBox(height: 20),
+              Text(
+                '2. Thêm ảnh rõ nét',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '1–5 ảnh JPG/PNG, mỗi ảnh dưới 10MB. Chụp trọn bảng giá, tránh lóa và mờ.',
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _busy ? null : _pick,
+                    icon: const Icon(Icons.photo_library_outlined),
+                    label: const Text('Chọn ảnh'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _busy ? null : () => _pick(camera: true),
+                    icon: const Icon(Icons.camera_alt_outlined),
+                    label: const Text('Chụp ảnh'),
                   ),
                 ],
               ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Submit Button
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                onPressed: () {
-                  final newContrib = UserContribution(
-                    id: 'contrib_${DateTime.now().millisecondsSinceEpoch}',
-                    placeName: _selectedPlaceName,
-                    placeAddress: _selectedPlaceAddress,
-                    date: DateTime.now(),
-                    totalAmount: _totalAmount,
-                    status: ContributionStatus.pending,
-                  );
-
-                  ref
-                      .read(contributionsProvider.notifier)
-                      .addContribution(newContrib);
-
-                  showDialog(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      title: const Row(
-                        children: [
-                          Icon(
-                            Icons.check_circle_rounded,
-                            color: AppColors.verified,
-                            size: 20,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Đóng Góp Thành Công!',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
+              for (var index = 0; index < _images.length; index++)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Card(
+                    child: Column(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: Image.memory(
+                            _images[index].bytes,
+                            height: 160,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) => const Padding(
+                              padding: EdgeInsets.all(20),
+                              child: Text(
+                                'Không đọc được ảnh. Chọn ảnh JPG/PNG khác.',
+                              ),
                             ),
                           ),
-                        ],
-                      ),
-                      content: Text(
-                        'Hóa đơn quán "$_selectedPlaceName" với số tiền ${CurrencyFormatter.format(_totalAmount)} đã được gửi lên hệ thống. Dữ liệu sẽ xuất hiện chính thức sau khi đối soát xong.',
-                        style: const TextStyle(fontSize: 12.5),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: const Text(
-                            'Đồng ý',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primary,
-                            ),
+                        ),
+                        ListTile(
+                          title: Text(
+                            _images[index].name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: IconButton(
+                            tooltip: 'Bỏ ảnh ${index + 1}',
+                            onPressed: _busy
+                                ? null
+                                : () => setState(() => _images.removeAt(index)),
+                            icon: const Icon(Icons.close),
                           ),
                         ),
                       ],
                     ),
-                  );
-                },
-                child: const Text(
-                  'Gửi Đóng Góp Lên Hệ Thống',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
                   ),
                 ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: _busy ? null : _submit,
+                child: Text(_busy ? 'Đang xử lý ảnh…' : 'Gửi đóng góp'),
               ),
-            ),
-
-            const SizedBox(height: 32),
-          ],
+              if (_busy)
+                const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: LinearProgressIndicator(),
+                ),
+              if (_message != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    _message!,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+              const Divider(height: 32),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Lịch sử đóng góp',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Tải lại lịch sử',
+                    onPressed: () => ref.invalidate(liveContributionsProvider),
+                    icon: const Icon(Icons.refresh),
+                  ),
+                ],
+              ),
+              ref
+                  .watch(liveContributionsProvider)
+                  .when(
+                    loading: () => const LinearProgressIndicator(),
+                    error: (e, _) => Text('$e'),
+                    data: (data) => Column(
+                      children: [
+                        if (data.isEmpty) const Text('Chưa có đóng góp'),
+                        for (final item in data)
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(item['place_name']),
+                            subtitle: Text(
+                              '${statusLabel(item['status'])}${item['rejection_reason'] == '' ? '' : '\n${item['rejection_reason']}'}',
+                            ),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ReviewScreen(id: item['id']),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
+String statusLabel(String status) => switch (status) {
+  'approved' => 'Đã duyệt',
+  'rejected' => 'Bị từ chối',
+  _ => 'Chờ Admin duyệt',
+};

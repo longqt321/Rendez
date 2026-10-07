@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-
-import 'package:rendez/core/constants/app_colors.dart';
 import 'package:rendez/core/models/place.dart';
 import 'package:rendez/core/providers/app_providers.dart';
 import 'package:rendez/core/utils/currency_formatter.dart';
@@ -12,294 +10,151 @@ import 'package:rendez/features/explore/widgets/bouncing_heart_button.dart';
 class MasonryPlaceCard extends ConsumerWidget {
   final Place place;
   final double imageHeight;
-
   const MasonryPlaceCard({
     super.key,
     required this.place,
-    this.imageHeight = 175,
+    this.imageHeight = 155,
   });
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isSaved = ref.watch(bookmarksProvider).contains(place.id);
-    final pastel = place.vibes.isNotEmpty
-        ? AppColors.getEditorialPastel(place.vibes.first, isDark: isDark)
-        : (
-            bg: isDark ? AppColors.darkPeachPastel : AppColors.peachPastel,
-            text: isDark
-                ? AppColors.darkPeachPastelText
-                : AppColors.peachPastelText,
-          );
-
-    return Container(
+    final theme = Theme.of(context);
+    final coffee =
+        place.category.toLowerCase().contains('cà phê') ||
+        place.category.toLowerCase().contains('cafe');
+    final tint = coffee ? const Color(0xFFFFD9B8) : const Color(0xFFD8D1FF);
+    Widget placeholder() => Container(
+      height: imageHeight,
+      width: double.infinity,
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: isDark ? AppColors.darkPaperBorder : AppColors.paperBorder,
+        gradient: LinearGradient(
+          colors: [
+            tint,
+            coffee ? const Color(0xFFFFEED6) : const Color(0xFFE7F6D7),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: (isDark ? Colors.black : const Color(0xFF281C10)).withValues(
-              alpha: isDark ? 0.25 : 0.06,
-            ),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: (isDark ? Colors.black : const Color(0xFF281C10)).withValues(
-              alpha: isDark ? 0.1 : 0.02,
-            ),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
+      child: Center(
+        child: Icon(
+          coffee ? Icons.local_cafe_rounded : Icons.storefront_rounded,
+          size: 54,
+          color: const Color(0xFF453454),
+        ),
+      ),
+    );
+    return Card(
       clipBehavior: Clip.antiAlias,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(22),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => PlaceDetailScreen(place: place),
-              ),
-            );
-          },
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Editorial / Polaroid Image Stack
-              Stack(
-                children: [
+      child: InkWell(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => PlaceDetailScreen(place: place)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                if (place.coverImageUrl.isNotEmpty)
                   CachedNetworkImage(
                     imageUrl: place.coverImageUrl,
                     height: imageHeight,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      height: imageHeight,
-                      color: AppColors.neutral100,
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      height: imageHeight,
-                      color: AppColors.neutral200,
-                      child: const Icon(
-                        Icons.broken_image_rounded,
-                        color: AppColors.neutral400,
-                      ),
+                    placeholder: (_, _) => placeholder(),
+                    errorWidget: (_, _, _) => placeholder(),
+                  )
+                else
+                  placeholder(),
+                Positioned(
+                  right: 6,
+                  top: 6,
+                  child: BouncingHeartButton(
+                    size: 38,
+                    isSaved: ref.watch(bookmarksProvider).contains(place.id),
+                    onTap: () => toggleBookmark(context, ref, place.id),
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    place.category,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.primary,
                     ),
                   ),
-
-                  // Top Left Editorial Pastel Vibe Pill
-                  if (place.vibes.isNotEmpty)
-                    Positioned(
-                      top: 10,
-                      left: 10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 9,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: pastel.bg.withValues(alpha: 0.94),
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.08),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          place.vibes.first,
-                          style: TextStyle(
-                            color: pastel.text,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                  // Top Right Polaroid Tactile Bouncing Heart/Save Button
-                  Positioned(
-                    top: 6,
-                    right: 6,
-                    child: BouncingHeartButton(
-                      isSaved: isSaved,
-                      size: 34,
-                      onTap: () {
-                        ref.read(bookmarksProvider.notifier).toggle(place.id);
-                      },
-                    ),
+                  const SizedBox(height: 5),
+                  Text(
+                    place.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium,
                   ),
-
-                  // Bottom Verified Bill Tag (Chic Micro Badge)
-                  if (place.isVerified)
-                    Positioned(
-                      bottom: 8,
-                      left: 10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 3.5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.verified.withValues(alpha: 0.92),
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.verified_rounded,
-                              size: 11,
-                              color: Colors.white,
-                            ),
-                            SizedBox(width: 3.5),
-                            Text(
-                              'Bill thật',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.1,
-                              ),
-                            ),
-                          ],
-                        ),
+                  const SizedBox(height: 6),
+                  Text(
+                    place.address,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withValues(
+                        alpha: .5,
                       ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                ],
-              ),
-
-              // Editorial Magazine Typography Body
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Place Name
-                    Text(
-                      place.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w800,
-                        color: isDark
-                            ? AppColors.darkNeutral900
-                            : AppColors.neutral900,
-                        letterSpacing: -0.3,
-                        height: 1.25,
-                      ),
-                    ),
-
-                    const SizedBox(height: 3),
-
-                    // Distance & Category
-                    Text(
-                      '${place.distanceKm} km · ${place.category}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isDark
-                            ? AppColors.darkNeutral600
-                            : const Color(0xFF78716C),
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.1,
-                      ),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    // Lifestyle Price & Star Rating Row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Soft Lifestyle Price Pill (non-accounting aesthetic)
-                        Flexible(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 3.5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppColors.primary.withValues(alpha: 0.16)
-                                  : AppColors.primarySubtle,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              CurrencyFormatter.formatRange(
-                                place.minPrice,
-                                place.maxPrice,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w800,
-                                color: isDark
-                                    ? const Color(0xFFFBBF24)
-                                    : AppColors.primaryText,
-                                letterSpacing: 0.1,
-                              ),
-                            ),
+                        Text(
+                          place.fullMenu.isEmpty
+                              ? 'Chưa có bảng giá'
+                              : 'Từ ${CurrencyFormatter.format(place.minPrice)}',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: theme.colorScheme.onPrimaryContainer,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-
-                        const SizedBox(width: 6),
-
-                        // Star rating
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.star_rounded,
-                              size: 14,
-                              color: AppColors.warning,
-                            ),
-                            const SizedBox(width: 2.5),
-                            Text(
-                              place.rating.toStringAsFixed(1),
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: isDark
-                                    ? AppColors.darkNeutral900
-                                    : AppColors.neutral900,
-                              ),
-                            ),
-                          ],
+                        if (place.fullMenu.isNotEmpty)
+                          Text(
+                            '${place.fullMenu.length} món · đơn giá tham khảo',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (place.isVerified) ...[
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.verified_outlined,
+                          size: 15,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        const Expanded(
+                          child: Text(
+                            'Admin đã xác nhận',
+                            style: TextStyle(fontSize: 11),
+                          ),
                         ),
                       ],
                     ),
                   ],
-                ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

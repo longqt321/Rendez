@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Chọn ảnh menu hoặc hóa đơn để đóng góp thông tin giá.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Chụp ảnh menu hoặc hóa đơn để đóng góp thông tin giá.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Tính khoảng cách dự kiến đến địa điểm bạn chọn.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

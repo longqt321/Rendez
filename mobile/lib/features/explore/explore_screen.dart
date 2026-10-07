@@ -1,169 +1,240 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-
-import 'package:rendez/core/constants/app_colors.dart';
 import 'package:rendez/core/providers/app_providers.dart';
-import 'package:rendez/features/contribute/contribute_screen.dart';
-import 'package:rendez/features/explore/widgets/filter_chips_bar.dart';
-import 'package:rendez/features/explore/widgets/map_view_widget.dart';
-import 'package:rendez/features/explore/widgets/masonry_place_card.dart';
+import 'package:rendez/core/widgets/state_message.dart';
 import 'package:rendez/features/explore/widgets/search_header.dart';
+import 'package:rendez/features/explore/widgets/masonry_place_card.dart';
 
 class ExploreScreen extends ConsumerWidget {
   const ExploreScreen({super.key});
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final data = ref.watch(placesProvider);
     final places = ref.watch(filteredPlacesProvider);
-    final isMapView = ref.watch(isMapViewProvider);
+    final hasFilters =
+        ref.watch(searchQueryProvider).isNotEmpty ||
+        ref.watch(selectedCategoryProvider) != null ||
+        ref.watch(selectedBudgetRangeProvider) != 0;
+    void reset() {
+      ref.read(searchQueryProvider.notifier).state = '';
+      ref.read(selectedCategoryProvider.notifier).state = null;
+      ref.read(selectedBudgetRangeProvider.notifier).state = 0;
+      ref.read(selectedVibeFilterProvider.notifier).state = null;
+      ref.read(selectedQuickFilterProvider.notifier).state = 'all';
+    }
 
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
       body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                // Top Search Header
-                const SearchHeader(),
-
-                // Horizontal Filters
-                const FilterChipsBar(),
-
-                // Content View (Grid or Map)
-                Expanded(
-                  child: isMapView
-                      ? MapViewWidget(places: places)
-                      : places.isEmpty
-                      ? _buildEmptyState(context, ref)
-                      : LayoutBuilder(
-                          builder: (context, constraints) {
-                            if (constraints.maxWidth <= 0) {
-                              return const SizedBox.shrink();
-                            }
-                            return RefreshIndicator(
-                              color: AppColors.primary,
-                              onRefresh: () async {
-                                await Future.delayed(
-                                  const Duration(milliseconds: 500),
-                                );
-                              },
-                              child: MasonryGridView.count(
-                                crossAxisCount: 2,
-                                mainAxisSpacing: 10,
-                                crossAxisSpacing: 10,
-                                padding: const EdgeInsets.fromLTRB(
-                                  14,
-                                  10,
-                                  14,
-                                  16,
-                                ),
-                                itemCount: places.isEmpty
-                                    ? 0
-                                    : places.length * 50,
-                                itemBuilder: (context, index) {
-                                  final place = places[index % places.length];
-                                  final double height = index.isEven
-                                      ? 165
-                                      : 195;
-                                  return MasonryPlaceCard(
-                                    place: place,
-                                    imageHeight: height,
-                                  );
-                                },
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = constraints.maxWidth < 380
+                ? 1
+                : constraints.maxWidth < 700
+                ? 2
+                : 3;
+            return RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(placesProvider);
+                await ref.read(placesProvider.future);
+              },
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  const SliverToBoxAdapter(child: SearchHeader()),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Wrap(
+                        spacing: 10,
+                        runSpacing: 8,
+                        children: [
+                          _FilterPill(
+                            child: DropdownButton<String>(
+                              isExpanded: true,
+                              underline: const SizedBox.shrink(),
+                              value: ref.watch(selectedCategoryProvider),
+                              hint: const Text(
+                                'Loại hình',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
-          ],
+                              items: [
+                                const DropdownMenuItem<String>(
+                                  value: null,
+                                  child: Text(
+                                    'Loại hình',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                for (final category in {
+                                  ?ref.watch(selectedCategoryProvider),
+                                  ...(data.valueOrNull ?? []).map(
+                                    (p) => p.category,
+                                  ),
+                                })
+                                  DropdownMenuItem(
+                                    value: category,
+                                    child: Text(
+                                      category,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                              ],
+                              onChanged: (v) =>
+                                  ref
+                                          .read(
+                                            selectedCategoryProvider.notifier,
+                                          )
+                                          .state =
+                                      v,
+                            ),
+                          ),
+                          _FilterPill(
+                            child: DropdownButton<int>(
+                              isExpanded: true,
+                              underline: const SizedBox.shrink(),
+                              value: ref.watch(selectedBudgetRangeProvider),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 0,
+                                  child: Text(
+                                    'Mức giá',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                DropdownMenuItem(
+                                  value: 1,
+                                  child: Text(
+                                    'Dưới 50k',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                DropdownMenuItem(
+                                  value: 2,
+                                  child: Text(
+                                    '50k–100k',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                DropdownMenuItem(
+                                  value: 3,
+                                  child: Text(
+                                    '100k–200k',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                DropdownMenuItem(
+                                  value: 4,
+                                  child: Text(
+                                    'Từ 200k',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                              onChanged: (v) =>
+                                  ref
+                                          .read(
+                                            selectedBudgetRangeProvider
+                                                .notifier,
+                                          )
+                                          .state =
+                                      v!,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              data.hasValue
+                                  ? '${places.length} địa điểm dành cho bạn'
+                                  : 'Khám phá địa điểm',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                          ),
+                          if (hasFilters)
+                            TextButton(
+                              onPressed: reset,
+                              child: const Text('Bỏ bộ lọc'),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  data.when(
+                    loading: () => const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                    error: (error, _) => SliverToBoxAdapter(
+                      child: StateMessage(
+                        icon: Icons.wifi_off_rounded,
+                        title: 'Chưa tải được địa điểm',
+                        message: '$error',
+                        actionLabel: 'Thử lại',
+                        onAction: () => ref.invalidate(placesProvider),
+                      ),
+                    ),
+                    data: (_) => places.isEmpty
+                        ? SliverToBoxAdapter(
+                            child: StateMessage(
+                              icon: Icons.travel_explore_rounded,
+                              title: 'Chưa tìm thấy chỗ hợp ý',
+                              message: hasFilters
+                                  ? 'Thử tên khác hoặc bỏ bộ lọc để khám phá thêm.'
+                                  : 'Chưa có địa điểm tại thành phố này. Hãy chọn thành phố khác.',
+                              actionLabel: hasFilters ? 'Bỏ bộ lọc' : null,
+                              onAction: hasFilters ? reset : null,
+                            ),
+                          )
+                        : SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                            sliver: SliverMasonryGrid.count(
+                              crossAxisCount: columns,
+                              mainAxisSpacing: 16,
+                              crossAxisSpacing: 14,
+                              childCount: places.length,
+                              itemBuilder: (_, index) =>
+                                  MasonryPlaceCard(place: places[index]),
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
   }
+}
 
-  Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: const BoxDecoration(
-                color: AppColors.neutral100,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.search_off_rounded,
-                size: 32,
-                color: AppColors.neutral400,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Không tìm thấy địa điểm phù hợp',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-                color: AppColors.neutral900,
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Thử tìm từ khóa khác hoặc xóa bớt tiêu chí lọc vibe.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: AppColors.neutral500),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primarySubtle,
-                foregroundColor: AppColors.primary,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              onPressed: () {
-                ref.read(searchQueryProvider.notifier).state = '';
-                ref.read(selectedVibeFilterProvider.notifier).state = null;
-                ref.read(selectedQuickFilterProvider.notifier).state = 'all';
-              },
-              child: const Text(
-                'Xóa toàn bộ bộ lọc',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextButton.icon(
-              icon: const Icon(
-                Icons.add_location_alt_rounded,
-                size: 16,
-                color: AppColors.primary,
-              ),
-              label: const Text(
-                'Đóng góp quán này cho Rendez',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                ),
-              ),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ContributeScreen()),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+class _FilterPill extends StatelessWidget {
+  final Widget child;
+  const _FilterPill({required this.child});
+  @override
+  Widget build(BuildContext context) => Container(
+    width: ((MediaQuery.sizeOf(context).width - 50) / 2).clamp(0, 240),
+    padding: const EdgeInsets.symmetric(horizontal: 14),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surface,
+      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      borderRadius: BorderRadius.circular(18),
+    ),
+    child: child,
+  );
 }

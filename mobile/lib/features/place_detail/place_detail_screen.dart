@@ -1,613 +1,456 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-
-import 'package:rendez/core/constants/app_colors.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:rendez/core/api/api_client.dart';
 import 'package:rendez/core/models/place.dart';
 import 'package:rendez/core/providers/app_providers.dart';
 import 'package:rendez/core/utils/currency_formatter.dart';
-import 'package:rendez/features/explore/widgets/bouncing_heart_button.dart';
-import 'package:rendez/features/place_detail/widgets/bill_breakdown_card.dart';
-import 'package:rendez/features/place_detail/widgets/menu_tab_view.dart';
-import 'package:rendez/features/place_detail/widgets/plan_invite_sheet.dart';
-import 'package:rendez/features/place_detail/widgets/price_report_sheet.dart';
+import 'package:rendez/core/utils/estimates.dart';
+import 'package:rendez/core/widgets/api_image.dart';
+import 'package:rendez/core/widgets/state_message.dart';
+import 'package:rendez/features/contribute/contribute_screen.dart';
 
-class PlaceDetailScreen extends ConsumerStatefulWidget {
+class PlaceDetailScreen extends ConsumerWidget {
   final Place place;
-
   const PlaceDetailScreen({super.key, required this.place});
-
   @override
-  ConsumerState<PlaceDetailScreen> createState() => _PlaceDetailScreenState();
-}
-
-class _PlaceDetailScreenState extends ConsumerState<PlaceDetailScreen> {
-  int _selectedTab = 0; // 0 = Real Bill, 1 = Full Menu
-  int _currentImageIndex = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    final place = widget.place;
-    final isSaved = ref.watch(bookmarksProvider).contains(place.id);
-    final allImages = [place.coverImageUrl, ...place.galleryImages];
-
-    return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
-      body: CustomScrollView(
-        slivers: [
-          // Collapsible Image Header
-          SliverAppBar(
-            expandedHeight: 280,
-            pinned: true,
-            leading: Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: CircleAvatar(
-                backgroundColor: Colors.white.withValues(alpha: 0.9),
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.arrow_back,
-                    color: AppColors.neutral900,
-                    size: 20,
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ),
-            ),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: BouncingHeartButton(
-                  isSaved: isSaved,
-                  size: 38,
-                  onTap: () =>
-                      ref.read(bookmarksProvider.notifier).toggle(place.id),
-                ),
-              ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
+  Widget build(BuildContext context, WidgetRef ref) => Scaffold(
+    appBar: AppBar(
+      title: Text(place.name),
+      actions: [
+        IconButton(
+          tooltip: 'Lưu địa điểm',
+          icon: Icon(
+            ref.watch(bookmarksProvider).contains(place.id)
+                ? Icons.favorite
+                : Icons.favorite_border,
+          ),
+          onPressed: () => toggleBookmark(context, ref, place.id),
+        ),
+        IconButton(
+          tooltip: 'Tải lại',
+          onPressed: () => ref.invalidate(placeDetailProvider(place.id)),
+          icon: const Icon(Icons.refresh),
+        ),
+      ],
+    ),
+    body: ref
+        .watch(placeDetailProvider(place.id))
+        .when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => StateMessage(
+            icon: Icons.storefront_outlined,
+            title: 'Chưa xem được địa điểm',
+            message: '$error',
+            actionLabel: 'Thử lại',
+            onAction: () => ref.invalidate(placeDetailProvider(place.id)),
+          ),
+          data: (detail) => Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
+              child: ListView(
+                padding: const EdgeInsets.all(24),
                 children: [
-                  PageView.builder(
-                    itemCount: allImages.length,
-                    onPageChanged: (idx) =>
-                        setState(() => _currentImageIndex = idx),
-                    itemBuilder: (_, idx) => CachedNetworkImage(
-                      imageUrl: allImages[idx],
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  // Gradient overlay
                   Container(
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0.4),
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.6),
+                      color: Theme.of(context).colorScheme.primaryContainer
+                          .withValues(alpha: .55),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            Chip(
+                              label: Text(detail.category),
+                              avatar: const Icon(
+                                Icons.storefront_outlined,
+                                size: 18,
+                              ),
+                            ),
+                            if (detail.isVerified)
+                              const Chip(
+                                label: Text('Admin đã xác nhận'),
+                                avatar: Icon(Icons.verified_outlined, size: 18),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          detail.address,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          detail.openHours.isEmpty
+                              ? 'Chưa cập nhật giờ mở cửa'
+                              : 'Giờ mở cửa: ${detail.openHours}',
+                        ),
+                        if (detail.description.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Text(detail.description),
                         ],
-                      ),
+                      ],
                     ),
                   ),
-                  // Image dots indicator
-                  Positioned(
-                    bottom: 16,
-                    right: 16,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.7),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${_currentImageIndex + 1}/${allImages.length}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                  const SizedBox(height: 24),
+                  DistancePanel(place: detail),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Chọn món · dự trù chi phí',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 12),
+                  for (final path in detail.galleryImages)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: ApiImage(path: path),
+                    ),
+                  if (detail.fullMenu.isEmpty)
+                    const Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Text(
+                          'Chưa có bảng giá. Bạn có ảnh menu? Hãy chia sẻ để mọi người tham khảo.',
                         ),
                       ),
                     ),
+                  if (detail.fullMenu.isNotEmpty)
+                    CostPanel(
+                      key: ValueKey('${detail.id}:${detail.priceUpdatedAt}'),
+                      place: detail,
+                    ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Giá mang tính tham khảo${detail.priceUpdatedAt == null ? '' : ' tại thời điểm cập nhật ${detail.priceUpdatedAt!.toLocal().day}/${detail.priceUpdatedAt!.toLocal().month}/${detail.priceUpdatedAt!.toLocal().year}'}. Không gồm phí dịch vụ và di chuyển.',
                   ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ContributeScreen(initialPlaceId: detail.id),
+                      ),
+                    ),
+                    icon: const Icon(Icons.add_photo_alternate_outlined),
+                    label: const Text('Chia sẻ ảnh menu hoặc hóa đơn'),
+                  ),
+                  if (detail.billExamples.isNotEmpty) ...[
+                    const Divider(height: 32),
+                    Text(
+                      'Ví dụ chi tiêu từ hóa đơn đã duyệt',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    for (final bill in detail.billExamples)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          '${CurrencyFormatter.format(bill['total'] as int)} / ${bill['guests']} khách',
+                        ),
+                        subtitle: Text(
+                          'Khoảng ${CurrencyFormatter.format(((bill['total'] as int) / (bill['guests'] as int)).round())} / người · Ngày ${DateTime.parse(bill['captured_at']).toLocal().toString().split(' ').first}',
+                        ),
+                      ),
+                    const Text(
+                      'Chi tiêu lịch sử, không phải đơn giá menu hoặc dự báo cho chuyến đi mới.',
+                    ),
+                  ],
                 ],
               ),
             ),
           ),
+        ),
+  );
+}
 
-          // Main Content
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Badges Row
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      if (place.isVerified)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.verifiedLight,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.verified_rounded,
-                                size: 12,
-                                color: AppColors.verified,
-                              ),
-                              SizedBox(width: 4),
-                              Text(
-                                'Hóa đơn đã kiểm duyệt',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.verified,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ...place.vibes.map((v) {
-                        final pastel = AppColors.getEditorialPastel(v);
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: pastel.bg,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            v,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: pastel.text,
-                            ),
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
+class CostPanel extends StatefulWidget {
+  final Place place;
+  const CostPanel({super.key, required this.place});
+  @override
+  State<CostPanel> createState() => _CostPanelState();
+}
 
-                  const SizedBox(height: 10),
-
-                  // Title & Rating
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          place.name,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.neutral900,
-                            letterSpacing: -0.4,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primarySubtle,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.star_rounded,
-                              size: 16,
-                              color: AppColors.warning,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              place.rating.toStringAsFixed(1),
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.neutral900,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  // Address & Hours
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_outlined,
-                        size: 15,
-                        color: AppColors.neutral400,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          place.address,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.neutral600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.access_time_rounded,
-                        size: 15,
-                        color: AppColors.neutral400,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Mở cửa: ${place.openHours}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.neutral600,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Price Highlight Box
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: AppColors.primaryLight,
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+class _CostPanelState extends State<CostPanel> {
+  final Map<String, int> _quantities = {};
+  int _party = 1;
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final total = widget.place.fullMenu.fold<int>(
+      0,
+      (sum, item) =>
+          sum +
+          item.price *
+              (_quantities[item.id.isEmpty ? item.name : item.id] ?? 0),
+    );
+    final selected = _quantities.values.any((v) => v > 0);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Chọn số lượng món để dự trù chi phí'),
+            const SizedBox(height: 12),
+            for (final item in widget.place.fullMenu) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.name, style: theme.textTheme.titleMedium),
+                    Row(
                       children: [
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Khoảng chi phí theo hóa đơn:',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.neutral500,
-                                  fontWeight: FontWeight.w600,
+                              Text(
+                                CurrencyFormatter.format(item.price),
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  color: theme.colorScheme.primary,
                                 ),
                               ),
-                              const SizedBox(height: 2),
                               Text(
-                                CurrencyFormatter.formatRange(
-                                  place.minPrice,
-                                  place.maxPrice,
-                                ),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.primary,
-                                ),
+                                item.category,
+                                style: theme.textTheme.bodySmall,
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppColors.neutral200),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 8,
-                            ),
-                          ),
-                          icon: const Icon(
-                            Icons.flag_outlined,
-                            size: 14,
-                            color: AppColors.destructive,
-                          ),
-                          label: const Text(
-                            'Báo giá lệch',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.destructive,
-                            ),
-                          ),
-                          onPressed: () {
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (_) =>
-                                  PriceReportSheet(placeName: place.name),
-                            );
-                          },
+                        IconButton(
+                          tooltip: 'Giảm ${item.name}',
+                          onPressed:
+                              (_quantities[item.id.isEmpty
+                                          ? item.name
+                                          : item.id] ??
+                                      0) ==
+                                  0
+                              ? null
+                              : () => setState(
+                                  () =>
+                                      _quantities[item.id.isEmpty
+                                              ? item.name
+                                              : item.id] =
+                                          (_quantities[item.id.isEmpty
+                                                  ? item.name
+                                                  : item.id] ??
+                                              0) -
+                                          1,
+                                ),
+                          icon: const Icon(Icons.remove_circle_outline),
+                        ),
+                        Text(
+                          '${_quantities[item.id.isEmpty ? item.name : item.id] ?? 0}',
+                          style: theme.textTheme.titleMedium,
+                        ),
+                        IconButton(
+                          tooltip: 'Thêm ${item.name}',
+                          onPressed:
+                              (_quantities[item.id.isEmpty
+                                          ? item.name
+                                          : item.id] ??
+                                      0) >=
+                                  99
+                              ? null
+                              : () => setState(
+                                  () =>
+                                      _quantities[item.id.isEmpty
+                                              ? item.name
+                                              : item.id] =
+                                          (_quantities[item.id.isEmpty
+                                                  ? item.name
+                                                  : item.id] ??
+                                              0) +
+                                          1,
+                                ),
+                          icon: const Icon(Icons.add_circle_outline),
                         ),
                       ],
                     ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Action Buttons: Lên Kèo Rủ Bạn & Chỉ Đường
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 5,
-                        child: SizedBox(
-                          height: 48,
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            icon: const Icon(Icons.send_rounded, size: 16),
-                            label: const Text(
-                              'Lên Kèo Rủ Bạn',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 13,
-                              ),
-                            ),
-                            onPressed: () {
-                              HapticFeedback.mediumImpact();
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (_) => PlanInviteSheet(place: place),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        flex: 4,
-                        child: SizedBox(
-                          height: 48,
-                          child: OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.neutral900,
-                              side: const BorderSide(
-                                color: AppColors.neutral300,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            icon: const Icon(
-                              Icons.directions_rounded,
-                              size: 16,
-                              color: AppColors.neutral800,
-                            ),
-                            label: const Text(
-                              'Chỉ Đường',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12.5,
-                              ),
-                            ),
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Đang mở chỉ đường tới: ${place.name}',
-                                  ),
-                                  backgroundColor: AppColors.neutral900,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Tab switcher: Hóa đơn thực tế vs Thực đơn đầy đủ
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: AppColors.neutral100,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Semantics(
-                            button: true,
-                            selected: _selectedTab == 0,
-                            label: 'Tab Hóa đơn đối soát',
-                            child: Material(
-                              color: _selectedTab == 0
-                                  ? Colors.white
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(12),
-                              elevation: _selectedTab == 0 ? 1 : 0,
-                              shadowColor: Colors.black.withValues(alpha: 0.1),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(12),
-                                onTap: () {
-                                  HapticFeedback.selectionClick();
-                                  setState(() => _selectedTab = 0);
-                                },
-                                child: Container(
-                                  constraints: const BoxConstraints(
-                                    minHeight: 44,
-                                  ),
-                                  alignment: Alignment.center,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 8,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.receipt_long_rounded,
-                                        size: 15,
-                                        color: _selectedTab == 0
-                                            ? AppColors.primary
-                                            : AppColors.neutral500,
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Flexible(
-                                        child: Text(
-                                          'Hóa Đơn (${place.bills.length})',
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: _selectedTab == 0
-                                                ? FontWeight.w800
-                                                : FontWeight.w600,
-                                            color: _selectedTab == 0
-                                                ? AppColors.neutral900
-                                                : AppColors.neutral500,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Semantics(
-                            button: true,
-                            selected: _selectedTab == 1,
-                            label: 'Tab Thực đơn đầy đủ',
-                            child: Material(
-                              color: _selectedTab == 1
-                                  ? Colors.white
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(12),
-                              elevation: _selectedTab == 1 ? 1 : 0,
-                              shadowColor: Colors.black.withValues(alpha: 0.1),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(12),
-                                onTap: () {
-                                  HapticFeedback.selectionClick();
-                                  setState(() => _selectedTab = 1);
-                                },
-                                child: Container(
-                                  constraints: const BoxConstraints(
-                                    minHeight: 44,
-                                  ),
-                                  alignment: Alignment.center,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 8,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.restaurant_menu_rounded,
-                                        size: 15,
-                                        color: _selectedTab == 1
-                                            ? AppColors.primary
-                                            : AppColors.neutral500,
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Flexible(
-                                        child: Text(
-                                          'Toàn Bộ Menu (${place.fullMenu.length})',
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: _selectedTab == 1
-                                                ? FontWeight.w800
-                                                : FontWeight.w600,
-                                            color: _selectedTab == 1
-                                                ? AppColors.neutral900
-                                                : AppColors.neutral500,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Tab Content
-                  if (_selectedTab == 0) ...[
-                    if (place.latestBill != null)
-                      BillBreakdownCard(bill: place.latestBill!)
-                    else
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(32),
-                          child: Text(
-                            'Chưa có hóa đơn nào được tải lên cho quán này.',
-                          ),
-                        ),
-                      ),
-                  ] else ...[
-                    MenuTabView(menu: place.fullMenu),
                   ],
-
-                  const SizedBox(height: 40),
-                ],
+                ),
+              ),
+              const Divider(height: 1),
+            ],
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Expanded(child: Text('Số người (chia đều)')),
+                IconButton(
+                  tooltip: 'Giảm số người',
+                  onPressed: _party > 1 ? () => setState(() => _party--) : null,
+                  icon: const Icon(Icons.remove_circle_outline),
+                ),
+                Text('$_party', style: theme.textTheme.titleMedium),
+                IconButton(
+                  tooltip: 'Thêm người',
+                  onPressed: _party < 100
+                      ? () => setState(() => _party++)
+                      : null,
+                  icon: const Icon(Icons.add_circle_outline),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Text(
+                selected
+                    ? 'Tổng dự kiến: ${CurrencyFormatter.format(total)} · khoảng ${CurrencyFormatter.format((total / _party).round())} / người'
+                    : 'Chưa chọn món để tính chi phí',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class DistancePanel extends StatefulWidget {
+  final Place place;
+  const DistancePanel({super.key, required this.place});
+  @override
+  State<DistancePanel> createState() => _DistancePanelState();
+}
+
+class _DistancePanelState extends State<DistancePanel> {
+  double? _distance;
+  bool _busy = false;
+  String? _error;
+
+  Future<void> _gps() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+      _distance = null;
+    });
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        throw const ApiException(
+          'Bật vị trí trên thiết bị để xem khoảng cách từ bạn.',
+        );
+      }
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        throw const ApiException(
+          'Cho phép Rendez dùng vị trí để xem khoảng cách từ bạn.',
+        );
+      }
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          timeLimit: Duration(seconds: 10),
+        ),
+      );
+      if (!mounted) return;
+      final distance = distanceKm(
+        position.latitude,
+        position.longitude,
+        widget.place.latitude,
+        widget.place.longitude,
+      );
+      setState(() {
+        _distance = distance;
+        _error = distance == null
+            ? 'Chưa có thông tin khoảng cách cho địa điểm này.'
+            : null;
+      });
+    } on ApiException catch (error) {
+      if (mounted) setState(() => _error = error.message);
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _error = 'Chưa xác định được vị trí của bạn. Hãy thử lại.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    if (!validCoordinates(widget.place.latitude, widget.place.longitude)) {
+      return const Card(
+        child: ListTile(
+          leading: Icon(Icons.near_me_outlined),
+          title: Text('Chưa có thông tin khoảng cách cho địa điểm này.'),
+        ),
+      );
+    }
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.near_me_outlined, color: theme.colorScheme.primary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Cách bạn bao xa?',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (_distance != null) ...[
+              Text(
+                'Khoảng ${formatDistance(_distance!)} từ bạn',
+                style: theme.textTheme.titleLarge,
+              ),
+              const SizedBox(height: 4),
+              const Text('Khoảng cách ước tính'),
+              const SizedBox(height: 12),
+            ],
+            OutlinedButton.icon(
+              onPressed: _busy ? null : _gps,
+              icon: const Icon(Icons.my_location_rounded),
+              label: Text(
+                _busy
+                    ? 'Đang tìm vị trí…'
+                    : _distance == null
+                    ? 'Xem khoảng cách từ bạn'
+                    : 'Cập nhật khoảng cách',
+              ),
+            ),
+            if (_busy)
+              const Padding(
+                padding: EdgeInsets.only(top: 12),
+                child: LinearProgressIndicator(),
+              ),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  _error!,
+                  style: TextStyle(color: theme.colorScheme.error),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

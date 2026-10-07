@@ -1,215 +1,104 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:rendez/core/constants/app_colors.dart';
-
 class AppTheme {
   AppTheme._();
+  static ThemeData get lightTheme => _theme(Brightness.light);
+  static ThemeData get darkTheme => _theme(Brightness.dark);
 
-  static ThemeData get lightTheme {
-    final baseTextTheme = GoogleFonts.plusJakartaSansTextTheme();
-
-    return ThemeData(
-      useMaterial3: true,
-      scaffoldBackgroundColor: AppColors.scaffoldBackground,
-      colorScheme: const ColorScheme.light(
-        primary: AppColors.primary,
-        onPrimary: Colors.white,
-        secondary: AppColors.verified,
-        onSecondary: Colors.white,
-        surface: AppColors.surface,
-        onSurface: AppColors.neutral900,
-        error: AppColors.destructive,
-        onError: Colors.white,
-      ),
-      textTheme: baseTextTheme.copyWith(
-        headlineMedium: baseTextTheme.headlineMedium?.copyWith(
+  static ThemeData _theme(Brightness brightness) {
+    final dark = brightness == Brightness.dark;
+    final scheme =
+        ColorScheme.fromSeed(
+          seedColor: const Color(0xFF6D28D9),
+          brightness: brightness,
+        ).copyWith(
+          primary: dark ? const Color(0xFFC4B5FD) : const Color(0xFF6D28D9),
+          onPrimary: dark ? const Color(0xFF24113F) : Colors.white,
+          surface: dark ? const Color(0xFF211D2B) : Colors.white,
+        );
+    final base = ThemeData(useMaterial3: true, colorScheme: scheme);
+    final text = GoogleFonts.plusJakartaSansTextTheme(base.textTheme);
+    return base.copyWith(
+      scaffoldBackgroundColor: dark
+          ? const Color(0xFF15121D)
+          : const Color(0xFFFAF8FF),
+      textTheme: text.copyWith(
+        headlineMedium: text.headlineMedium?.copyWith(
           fontWeight: FontWeight.w800,
-          color: AppColors.neutral900,
-          letterSpacing: -0.5,
+          letterSpacing: -1,
         ),
-        titleLarge: baseTextTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w700,
-          color: AppColors.neutral900,
-          letterSpacing: -0.3,
+        headlineSmall: text.headlineSmall?.copyWith(
+          fontWeight: FontWeight.w800,
+          letterSpacing: -.5,
         ),
-        titleMedium: baseTextTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: AppColors.neutral900,
-        ),
-        bodyMedium: baseTextTheme.bodyMedium?.copyWith(
-          color: AppColors.neutral700,
-          fontSize: 13,
-        ),
-        bodySmall: baseTextTheme.bodySmall?.copyWith(
-          color: AppColors.neutral500,
-          fontSize: 11,
-        ),
+        titleLarge: text.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+        titleMedium: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+        bodyMedium: text.bodyMedium?.copyWith(fontSize: 14, height: 1.5),
+        bodySmall: text.bodySmall?.copyWith(fontSize: 12, height: 1.4),
       ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.white,
+      appBarTheme: AppBarTheme(
+        backgroundColor: dark
+            ? const Color(0xFF15121D)
+            : const Color(0xFFFAF8FF),
+        foregroundColor: scheme.onSurface,
+        centerTitle: false,
         elevation: 0,
-        scrolledUnderElevation: 0.5,
-        iconTheme: IconThemeData(color: AppColors.neutral900),
-        titleTextStyle: TextStyle(
-          color: AppColors.neutral900,
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
-        ),
+        scrolledUnderElevation: 0,
       ),
       cardTheme: CardThemeData(
-        color: Colors.white,
+        color: scheme.surface,
         elevation: 0,
+        margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.neutral200, width: 1),
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: scheme.outlineVariant.withValues(alpha: .6)),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.neutral100,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
+        fillColor: scheme.surface,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 18,
         ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: scheme.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
-        ),
-        hintStyle: const TextStyle(
-          color: AppColors.neutral400,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
+          borderSide: BorderSide(color: scheme.primary, width: 2),
         ),
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Colors.white,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.neutral400,
-        selectedLabelStyle: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-        ),
-        unselectedLabelStyle: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
-        type: BottomNavigationBarType.fixed,
-        elevation: 8,
-      ),
-    );
-  }
-
-  static ThemeData get darkTheme {
-    final baseTextTheme = GoogleFonts.plusJakartaSansTextTheme(
-      ThemeData.dark().textTheme,
-    );
-
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: AppColors.darkScaffoldBackground,
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.primary,
-        onPrimary: Colors.white,
-        secondary: AppColors.verified,
-        onSecondary: Colors.white,
-        surface: AppColors.darkSurface,
-        onSurface: AppColors.darkNeutral900,
-        error: AppColors.destructive,
-        onError: Colors.white,
-      ),
-      textTheme: baseTextTheme.copyWith(
-        headlineMedium: baseTextTheme.headlineMedium?.copyWith(
-          fontWeight: FontWeight.w800,
-          color: AppColors.darkNeutral900,
-          letterSpacing: -0.5,
-        ),
-        titleLarge: baseTextTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w700,
-          color: AppColors.darkNeutral900,
-          letterSpacing: -0.3,
-        ),
-        titleMedium: baseTextTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: AppColors.darkNeutral900,
-        ),
-        bodyMedium: baseTextTheme.bodyMedium?.copyWith(
-          color: AppColors.darkNeutral700,
-          fontSize: 13,
-        ),
-        bodySmall: baseTextTheme.bodySmall?.copyWith(
-          color: AppColors.darkNeutral500,
-          fontSize: 11,
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(48, 52),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
       ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.darkScaffoldBackground,
-        elevation: 0,
-        scrolledUnderElevation: 0.5,
-        iconTheme: IconThemeData(color: AppColors.darkNeutral900),
-        titleTextStyle: TextStyle(
-          color: AppColors.darkNeutral900,
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(48, 48),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
       ),
-      cardTheme: CardThemeData(
-        color: AppColors.darkSurface,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.darkPaperBorder, width: 1),
-        ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: scheme.surface,
+        indicatorColor: scheme.primaryContainer,
+        height: 76,
       ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: AppColors.darkNeutral100,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.darkPaperBorder),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.darkPaperBorder),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
-        ),
-        hintStyle: const TextStyle(
-          color: AppColors.darkNeutral500,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: AppColors.darkSurface,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.darkNeutral500,
-        selectedLabelStyle: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-        ),
-        unselectedLabelStyle: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
-        type: BottomNavigationBarType.fixed,
-        elevation: 8,
-      ),
+      dividerTheme: DividerThemeData(color: scheme.outlineVariant),
     );
   }
 }
