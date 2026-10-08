@@ -1,0 +1,1 @@
+Roboto Regular and Medium from Flutter engine's txt/third_party/fonts, used only by screenshot tests to render actual glyphs instead of Flutter test Ahem squares. Licensed under Apache 2.0 (https://github.com/googlefonts/roboto/blob/main/LICENSE).

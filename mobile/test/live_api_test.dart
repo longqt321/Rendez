@@ -107,6 +107,13 @@ void main() {
       await container.read(placeDetailProvider(cafe.id).future);
     });
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Xem menu và tính chi phí'),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Xem menu và tính chi phí'));
+    await tester.pumpAndSettle();
     expect(find.text('Cà phê sữa'), findsOneWidget);
     expect(find.textContaining('35.000đ'), findsOneWidget);
     expect(tester.takeException(), isNull);

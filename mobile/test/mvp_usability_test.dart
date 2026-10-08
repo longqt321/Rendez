@@ -79,7 +79,9 @@ void main() {
     tester.binding.platformDispatcher.textScaleFactorTestValue = 1.5;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    addTearDown(tester.binding.platformDispatcher.clearTextScaleFactorTestValue);
+    addTearDown(
+      tester.binding.platformDispatcher.clearTextScaleFactorTestValue,
+    );
     final container = ProviderContainer(
       overrides: [
         authProvider.overrideWith((ref) => _SessionAuth(ref.read(apiProvider))),
@@ -91,7 +93,7 @@ void main() {
       UncontrolledProviderScope(container: container, child: const RendezApp()),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Email và mật khẩu'), findsOneWidget);
+    expect(find.byType(AuthProfileScreen), findsOneWidget);
     expect(find.byType(MainScaffold), findsNothing);
     final auth = container.read(authProvider.notifier) as _SessionAuth;
     auth.signIn();
@@ -106,7 +108,7 @@ void main() {
     auth.expire();
     await tester.pumpAndSettle();
     expect(find.text('Private detail'), findsNothing);
-    expect(find.text('Email và mật khẩu'), findsOneWidget);
+    expect(find.byType(AuthProfileScreen), findsOneWidget);
     expect(find.byType(MainScaffold), findsNothing);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
@@ -164,7 +166,7 @@ void main() {
         tester.widget<TextField>(find.byType(TextField)).controller!.text,
         isEmpty,
       );
-      expect(find.text('1 địa điểm'), findsOneWidget);
+      expect(find.text('Khám phá địa điểm'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -272,6 +274,12 @@ void main() {
       );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Đóng góp'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ảnh menu'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Chọn địa điểm'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Đề xuất địa điểm mới').last);
       await tester.pumpAndSettle();
       final name = find.widgetWithText(TextField, 'Tên địa điểm mới');
       await tester.enterText(name, 'Tên địa điểm đang nhập');

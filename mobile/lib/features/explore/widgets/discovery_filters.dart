@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rendez/core/providers/app_providers.dart';
 
@@ -12,6 +13,7 @@ class DiscoveryFilters extends ConsumerWidget {
         ref.watch(searchQueryProvider).isNotEmpty ||
         ref.watch(selectedCategoryProvider) != null ||
         ref.watch(selectedBudgetRangeProvider) != 0;
+    if (!kIsWeb) return _mobileFilters(context, ref);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Wrap(
@@ -118,6 +120,113 @@ class DiscoveryFilters extends ConsumerWidget {
             ),
         ],
       ),
+    );
+  }
+
+  Widget _mobileFilters(BuildContext context, WidgetRef ref) {
+    final places = ref.watch(placesProvider).valueOrNull ?? [];
+    final selected = ref.watch(selectedCategoryProvider);
+    final active =
+        selected != null ||
+        ref.watch(selectedBudgetRangeProvider) != 0 ||
+        ref.watch(selectedCityProvider) != 'Tất cả thành phố' ||
+        ref.watch(searchQueryProvider).isNotEmpty;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              for (final category in <String?>[
+                null,
+                ...{...places.map((p) => p.category)},
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    showCheckmark: false,
+                    label: Text(category ?? 'Tất cả'),
+                    selected: selected == category,
+                    onSelected: (_) =>
+                        ref.read(selectedCategoryProvider.notifier).state =
+                            category,
+                  ),
+                ),
+              ActionChip(
+                avatar: const Icon(Icons.tune_rounded, size: 18),
+                label: Text(
+                  ref.watch(selectedBudgetRangeProvider) == 0
+                      ? 'Giá món'
+                      : 'Đã lọc giá',
+                ),
+                onPressed: () => showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (sheetContext) => SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Giá mỗi món',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Hiển thị địa điểm có món trong khoảng giá bạn chọn.',
+                          ),
+                          const SizedBox(height: 12),
+                          for (final entry in const {
+                            0: 'Tất cả mức giá',
+                            1: 'Dưới 50.000đ',
+                            2: '50.000–100.000đ',
+                            3: '100.000–200.000đ',
+                            4: 'Từ 200.000đ',
+                          }.entries)
+                            ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(entry.value),
+                              trailing:
+                                  ref.read(selectedBudgetRangeProvider) ==
+                                      entry.key
+                                  ? const Icon(Icons.check_circle_rounded)
+                                  : null,
+                              onTap: () {
+                                ref
+                                    .read(selectedBudgetRangeProvider.notifier)
+                                    .state = entry
+                                    .key;
+                                Navigator.pop(sheetContext);
+                              },
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (active)
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: TextButton(
+              onPressed: () {
+                ref.read(selectedCityProvider.notifier).state =
+                    'Tất cả thành phố';
+                ref.read(searchQueryProvider.notifier).state = '';
+                ref.read(selectedCategoryProvider.notifier).state = null;
+                ref.read(selectedBudgetRangeProvider.notifier).state = 0;
+              },
+              child: const Text('Bỏ bộ lọc'),
+            ),
+          ),
+      ],
     );
   }
 }

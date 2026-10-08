@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rendez/core/providers/app_providers.dart';
 import 'package:rendez/core/widgets/state_message.dart';
@@ -74,16 +76,39 @@ class BookmarksScreen extends ConsumerWidget {
                         ref.invalidate(placesProvider);
                         await ref.read(placesProvider.future);
                       },
-                      child: ListView.separated(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.all(20),
-                        itemCount: saved.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 16),
-                        itemBuilder: (_, index) => MasonryPlaceCard(
-                          place: saved[index],
-                          imageHeight: 160,
-                        ),
-                      ),
+                      child: !kIsWeb
+                          ? MasonryGridView.count(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(
+                                16,
+                                12,
+                                16,
+                                24,
+                              ),
+                              crossAxisCount:
+                                  MediaQuery.sizeOf(context).width < 360 ||
+                                      MediaQuery.textScalerOf(context)
+                                              .scale(14) >
+                                          18
+                                  ? 1
+                                  : 2,
+                              mainAxisSpacing: 24,
+                              crossAxisSpacing: 12,
+                              itemCount: saved.length,
+                              itemBuilder: (_, index) =>
+                                  MasonryPlaceCard(place: saved[index]),
+                            )
+                          : ListView.separated(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.all(20),
+                              itemCount: saved.length,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(height: 16),
+                              itemBuilder: (_, index) => MasonryPlaceCard(
+                                place: saved[index],
+                                imageHeight: 160,
+                              ),
+                            ),
                     );
                   },
                 ),

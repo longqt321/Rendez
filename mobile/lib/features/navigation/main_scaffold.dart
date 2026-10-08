@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rendez/core/providers/app_providers.dart';
 import 'package:rendez/features/contribute/contribute_screen.dart';
@@ -118,6 +119,13 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
           bottomNavigationBar: wide
               ? null
               : NavigationBar(
+                  height: !kIsWeb
+                      ? 72 +
+                            (MediaQuery.textScalerOf(context).scale(14) / 14 -
+                                        1)
+                                    .clamp(0, 1) *
+                                48
+                      : null,
                   selectedIndex: _index,
                   onDestinationSelected: _select,
                   destinations: [

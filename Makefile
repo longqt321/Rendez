@@ -1,4 +1,4 @@
-.PHONY: help demo db db-recreate down migrate seed api api-dev build-web mobile-deps mobile check check-backend check-mobile integration integration-ui format
+.PHONY: help demo db db-recreate down migrate seed api api-dev build-web mobile-deps mobile check check-backend check-mobile integration integration-ui capture-mobile build-mobile format
 
 help:
 	@echo "demo            Start Docker API + OCR + DB, migrate, seed and wait ready"
@@ -70,3 +70,10 @@ integration-ui:
 format:
 	cd backend && gofmt -w cmd internal
 	cd mobile && dart format lib test
+
+# Actual Flutter mobile-widget captures, with explicit visual test fixtures.
+capture-mobile:
+	cd mobile && flutter test --no-pub --concurrency=1 test/mobile_visual_test.dart --dart-define=MOBILE_CAPTURE=true --dart-define=CAPTURE_DIR=../docs/design/mobile/final
+
+build-mobile:
+	cd mobile && flutter build apk --debug --no-pub

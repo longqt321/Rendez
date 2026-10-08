@@ -1,6 +1,5 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rendez/core/providers/app_providers.dart';
 
@@ -51,24 +50,56 @@ class _ApiImageState extends ConsumerState<ApiImage> {
         child: InkWell(
           onTap: () => showDialog<void>(
             context: context,
-            builder: (_) => Dialog(
-              child: Stack(
-                children: [
-                  InteractiveViewer(
-                    child: Image.memory(snapshot.data!, fit: BoxFit.contain),
-                  ),
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: IconButton.filled(
-                      tooltip: 'Đóng ảnh',
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
+            builder: (_) => !kIsWeb
+                ? Dialog.fullscreen(
+                    backgroundColor: const Color(0xFF101813),
+                    child: SafeArea(
+                      child: Stack(
+                        children: [
+                          Center(
+                            child: InteractiveViewer(
+                              minScale: .5,
+                              maxScale: 5,
+                              child: Image.memory(
+                                snapshot.data!,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            right: 8,
+                            top: 8,
+                            child: IconButton.filled(
+                              tooltip: 'Đóng ảnh',
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.close),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : Dialog(
+                    child: Stack(
+                      children: [
+                        InteractiveViewer(
+                          child: Image.memory(
+                            snapshot.data!,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: IconButton.filled(
+                            tooltip: 'Đóng ảnh',
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(Icons.close),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
           ),
           child: Image.memory(snapshot.data!, height: 220, fit: BoxFit.contain),
         ),

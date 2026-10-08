@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:rendez/core/providers/app_providers.dart';
@@ -54,7 +55,16 @@ class ExploreScreen extends ConsumerWidget {
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                        child: Text('${places.length} địa điểm'),
+                        child: Text(
+                          !kIsWeb
+                              ? (hasFilters
+                                    ? '${places.length} địa điểm phù hợp'
+                                    : 'Khám phá địa điểm')
+                              : '${places.length} địa điểm',
+                          style: !kIsWeb
+                              ? Theme.of(context).textTheme.titleMedium
+                              : null,
+                        ),
                       ),
                     ),
                   const SliverToBoxAdapter(child: SizedBox(height: 16)),
@@ -88,7 +98,7 @@ class ExploreScreen extends ConsumerWidget {
                             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                             sliver: SliverMasonryGrid.count(
                               crossAxisCount: columns,
-                              mainAxisSpacing: 16,
+                              mainAxisSpacing: kIsWeb ? 16 : 24,
                               crossAxisSpacing: 12,
                               childCount: places.length,
                               itemBuilder: (_, index) =>

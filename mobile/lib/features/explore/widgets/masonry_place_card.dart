@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:rendez/core/models/place.dart';
@@ -18,6 +19,7 @@ class MasonryPlaceCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    if (!kIsWeb) return _mobileCard(context, ref);
     final coffee =
         place.category.toLowerCase().contains('cà phê') ||
         place.category.toLowerCase().contains('cafe');
@@ -107,6 +109,128 @@ class MasonryPlaceCard extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _mobileCard(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final coffee =
+        place.category.toLowerCase().contains('caf') ||
+        place.category.toLowerCase().contains('cà phê');
+    final height = imageHeight == 155 ? (coffee ? 218.0 : 174.0) : imageHeight;
+    final saved = ref.watch(bookmarksProvider).contains(place.id);
+    Widget fallback() => Container(
+      color: theme.colorScheme.primaryContainer,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              coffee ? Icons.local_cafe_outlined : Icons.restaurant_outlined,
+              size: 42,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Chưa có ảnh',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    return InkWell(
+      borderRadius: BorderRadius.circular(22),
+      onTap: () {
+        ref.invalidate(placeDetailProvider(place.id));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => PlaceDetailScreen(place: place)),
+        );
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(22),
+            child: SizedBox(
+              height: height,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Material(
+                    child: InkWell(
+                      onTap: () {
+                        ref.invalidate(placeDetailProvider(place.id));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PlaceDetailScreen(place: place),
+                          ),
+                        );
+                      },
+                      child: place.coverImageUrl.isEmpty
+                          ? fallback()
+                          : CachedNetworkImage(
+                              imageUrl: place.coverImageUrl,
+                              fit: BoxFit.cover,
+                              placeholder: (_, _) => fallback(),
+                              errorWidget: (_, _, _) => fallback(),
+                            ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 8,
+                    bottom: 8,
+                    child: BouncingHeartButton(
+                      size: 40,
+                      useHeartIcon: false,
+                      isSaved: saved,
+                      onTap: () => toggleBookmark(context, ref, place.id),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 10, 4, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  place.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${place.category} · ${place.city}',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  place.fullMenu.isEmpty
+                      ? 'Chưa có giá'
+                      : 'Từ ${CurrencyFormatter.format(place.minPrice)}',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rendez/core/api/api_client.dart';
@@ -118,10 +119,74 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         );
       }
     } catch (error) {
-      if (mounted) setState(() => _error = '$error');
+      if (mounted) {
+        setState(
+          () => _error = !kIsWeb && error is ApiException && error.status == 409
+              ? 'Đóng góp này đã được xử lý. Tải lại dữ liệu trước khi tiếp tục.'
+              : '$error',
+        );
+      }
       ref.invalidate(contributionDetailProvider(widget.id));
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _confirm(String action, Map<String, dynamic> data) async {
+    if (kIsWeb || action == 'draft') {
+      await _action(action, data);
+      return;
+    }
+    if (action == 'rejected' && _reason.text.trim().isEmpty) {
+      setState(
+        () => _error = 'Nhập lý do để người gửi biết cần cải thiện điều gì.',
+      );
+      return;
+    }
+    FocusManager.instance.primaryFocus?.unfocus();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialog) => AlertDialog(
+        title: Text(
+          action == 'approved'
+              ? 'Duyệt đóng góp này?'
+              : action == 'rejected'
+              ? 'Từ chối đóng góp?'
+              : 'Đọc lại nội dung ảnh?',
+        ),
+        content: Text(
+          action == 'approved'
+              ? 'Dữ liệu được phép sẽ công khai. Quyết định này không thể đảo ngược.'
+              : action == 'rejected'
+              ? 'Người gửi sẽ nhận lý do từ chối. Quyết định này không thể đảo ngược.'
+              : 'Kết quả đọc lại sẽ thay nội dung đang sửa. Lưu bản nháp trước nếu cần giữ lại.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialog, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            style: action == 'rejected'
+                ? FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    foregroundColor: Theme.of(context).colorScheme.onError,
+                  )
+                : null,
+            onPressed: () => Navigator.pop(dialog, true),
+            child: Text(
+              action == 'approved'
+                  ? 'Phê duyệt'
+                  : action == 'rejected'
+                  ? 'Từ chối'
+                  : 'Đọc lại ảnh',
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await _action(action, data);
     }
   }
 
@@ -202,7 +267,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   ),
                   if (canReview)
                     OutlinedButton(
-                      onPressed: _busy ? null : () => _action('ocr', data),
+                      onPressed: _busy ? null : () => _confirm('ocr', data),
                       child: const Text('Đọc lại ảnh (thay nội dung đang sửa)'),
                     ),
                   if (data['type'] == 'menu_photo') ...[
@@ -308,13 +373,20 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                         FilledButton(
                           onPressed: _busy
                               ? null
-                              : () => _action('approved', data),
+                              : () => _confirm('approved', data),
                           child: const Text('Phê duyệt'),
                         ),
                         OutlinedButton(
                           onPressed: _busy
                               ? null
-                              : () => _action('rejected', data),
+                              : () => _confirm('rejected', data),
+                          style: !kIsWeb
+                              ? OutlinedButton.styleFrom(
+                                  foregroundColor: Theme.of(context)
+                                      .colorScheme
+                                      .error,
+                                )
+                              : null,
                           child: const Text('Từ chối'),
                         ),
                       ],
@@ -401,6 +473,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                     ),
                   if ((data['rejection_reason'] as String).isNotEmpty)
                     Text('Lý do: ${data['rejection_reason']}'),
+                  if (!kIsWeb) ...[const SizedBox(height: 12), const Divider()],
                   const SizedBox(height: 16),
                   LayoutBuilder(
                     builder: (context, constraints) =>
