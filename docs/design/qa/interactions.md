@@ -26,8 +26,9 @@ Signed in with an existing local audit account. Feed captured at 320, 390, 768 a
 - `390-map-save-toggle.png`, `390-map-save-restored.png`: favorites change with successful HTTP 204 responses; QA restores the venue to its original unsaved state afterward.
 - `390-map-cluster.png`, `390-map-cluster-expanded.png`: two actual coordinate-backed venues aggregate and split after clicking the numeric cluster.
 - `*-map-light-final.png`, `*-map-dark-final.png`, `*-feed-dark-final.png`: final-build snapshots at 320/390/768/1280px; light feed snapshots use the original names.
+- `390-map-attribution-save.png`: final provider attribution remains visible while a server-confirmed save snackbar is displayed.
 - `390-map-location-denied.png`: browser geolocation permission set to denied; map remains interactive. This capture does not certify native permission handling or immediate error-message delivery.
 
-Latest light feed and default/selected map images were recaptured after final builds. Earlier dark/area/detail captures remain applicable to their unchanged controls.
+Final `*-map-*-final.png` captures are the acceptance reference. Earlier map captures record previous iterations. Runtime review found a snackbar could obscure bottom attribution; the final implementation moves attribution into a separate row above the canvas. The 320dp/1.5x test checks attribution stays above preview actions.
 
 Images reviewed for price visibility, neutral/no-photo states, pin selection, attribution visibility and navigation collisions. See deviations for incomplete coverage.

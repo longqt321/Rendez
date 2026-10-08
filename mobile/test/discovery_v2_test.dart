@@ -105,6 +105,20 @@ void main() {
     await tester.tap(find.byTooltip('Lorem ipsum'));
     await tester.pumpAndSettle();
     expect(find.text('Chi tiết'), findsOneWidget);
+    ScaffoldMessenger.of(tester.element(find.byType(MapViewWidget)))
+        .showSnackBar(const SnackBar(content: Text('Lorem ipsum')));
+    await tester.pumpAndSettle();
+    final attribution = tester.getRect(
+      find.text('© OpenStreetMap contributors'),
+    );
+    expect(
+      attribution.bottom,
+      lessThan(tester.getRect(find.byType(SnackBar)).top),
+    );
+    expect(
+      attribution.bottom,
+      lessThan(tester.getRect(find.text('Chi tiết')).top),
+    );
     expect(tester.takeException(), isNull);
   });
   testWidgets(

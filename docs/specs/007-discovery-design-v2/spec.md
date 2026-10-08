@@ -12,7 +12,7 @@ Colors, neutral card surfaces, card borders, search labels and server-confirmed 
 
 Renderer: flutter_map 8.3.2, BSD-3-Clause. Cluster plugin: flutter_map_marker_cluster 8.2.2, MIT. Both list Flutter Web, Android and iOS support; native behavior still requires device acceptance.
 
-The local course demo defaults to `https://tile.openstreetmap.org/{z}/{x}/{y}.png`. Attribution is always visible and opens the OSM copyright page. Native requests identify `vn.rendez.app`; web uses browser identification and Referer. flutter_map's built-in cache is retained; no prefetch, offline download or cache-busting is added. `--dart-define=MAP_TILE_URL=...` supports an alternative compatible provider. A provider change must also update attribution and validate its license. OSM public tiles have usage restrictions and no availability guarantee; reassess the provider before production traffic.
+The local course demo defaults to `https://tile.openstreetmap.org/{z}/{x}/{y}.png`. Attribution occupies a separate row above the map canvas so previews and bottom snackbars cannot cover it, and opens the OSM copyright page. Native requests identify `vn.rendez.app`; web uses browser identification and Referer. flutter_map's built-in cache is retained; no prefetch, offline download or cache-busting is added. `--dart-define=MAP_TILE_URL=...` supports an alternative compatible provider. A provider change must also update attribution and validate its license. OSM public tiles have usage restrictions and no availability guarantee; reassess the provider before production traffic.
 
 Primary references: https://docs.fleaflet.dev/, https://pub.dev/packages/flutter_map_marker_cluster, https://operations.osmfoundation.org/policies/tiles/.
 
