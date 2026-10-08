@@ -9,11 +9,12 @@ import (
 	"net/mail"
 	"strings"
 
+	"rendez-backend/internal/httpx"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"rendez-backend/internal/httpx"
 )
 
 func registerAccounts(r chi.Router, pool *pgxpool.Pool) {
@@ -83,17 +84,18 @@ func registerAccounts(r chi.Router, pool *pgxpool.Pool) {
 	}
 }
 
-// SeedDemoAdmin creates only a local demonstration account; existing accounts are untouched.
+// SeedDemoAdmin creates the local demonstration admin or updates its seeded password.
 func SeedDemoAdmin(ctx context.Context, pool *pgxpool.Pool) (string, error) {
-	hash, err := hashPassword("RendezDemo123!")
+	hash, err := hashPassword("123123123")
 	if err != nil {
 		return "", err
 	}
-	_, err = pool.Exec(ctx, `INSERT INTO users(display_name,email,password_hash,role) VALUES('Demo Admin','admin@rendez.local',$1,'admin') ON CONFLICT(email) DO NOTHING`, hash)
+	_, err = pool.Exec(ctx, `INSERT INTO users(display_name,email,password_hash,role) VALUES('Demo Admin','longqt321@rendez.local',$1,'admin') ON CONFLICT(email) DO UPDATE
+SET password_hash = EXCLUDED.password_hash`, hash)
 	if err != nil {
 		return "", err
 	}
 	var id string
-	err = pool.QueryRow(ctx, `SELECT id::text FROM users WHERE email='admin@rendez.local' AND role='admin'`).Scan(&id)
+	err = pool.QueryRow(ctx, `SELECT id::text FROM users WHERE email='longqt321@rendez.local' AND role='admin'`).Scan(&id)
 	return id, err
 }

@@ -40,7 +40,7 @@ make mobile
 # Hoặc: cd mobile && flutter run -d web-server --web-hostname=127.0.0.1 --web-port=7357
 ```
 
-`make demo` chạy API Go và PostgreSQL trong Docker; không cần cài Tesseract trên host. API: `http://127.0.0.1:8080`. Admin local: `admin@rendez.local` / `RendezDemo123!`. Seed là dữ liệu mẫu và không ghi đè bản ghi đã chỉnh sửa.
+`make demo` chạy API Go và PostgreSQL trong Docker; không cần cài Tesseract trên host. API: `http://127.0.0.1:8080`. Admin local: `longqt321@rendez.local` / `123123123`. Seed giữ các bản ghi địa điểm đã chỉnh sửa; mật khẩu Admin local được cập nhật theo giá trị trong seed.
 
 Khi sửa Go theo cách host, dùng `make db migrate seed api`; OCR cần `tesseract` với ngôn ngữ `vie` và `eng` trên PATH. Không chạy host API và Docker API cùng cổng. Dừng stack bằng `make down`, giữ database và ảnh trong volumes. `make db-recreate` chỉ tạo lại container DB, giữ volume.
 
@@ -59,6 +59,8 @@ GitHub Actions chạy kiểm tra Go/Flutter và integration PostgreSQL. Android/
 ## Luồng ứng dụng
 
 Đã nối dữ liệu thật cho sáu module local: tài khoản; địa điểm/menu/tìm kiếm/lọc; khoảng cách và chi phí; yêu thích; đóng góp ảnh và lịch sử; Admin quản lý địa điểm, OCR và duyệt. Flutter gọi API Go, DB PostgreSQL và filesystem ảnh; không fallback sang mock khi API lỗi.
+
+App mở bằng đăng nhập/đăng ký; đăng nhập thành công chuyển sang Khám phá. Đăng xuất hoặc session hết hạn quay về đăng nhập.
 
 - **Khám phá:** tìm theo tên, địa chỉ, món ăn; lọc thành phố, loại hình và đơn giá. Chi tiết hiển thị menu/ảnh đã duyệt, thời điểm giá và trạng thái thiếu dữ liệu.
 - **Khoảng cách/chi phí:** vị trí thiết bị hoặc tọa độ nhập tay; Haversine đường chim bay. Chọn món, số lượng và số người để tính tổng/chia đều; không suy diễn chi phí từ trung bình menu.

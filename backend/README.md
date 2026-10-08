@@ -22,7 +22,7 @@ The Makefile provides disposable local DATABASE_URL, HTTP_ADDR and APP_ENV defau
 
 ## First live Flutter integration
 
-`make demo` at the repository root starts Docker PostgreSQL, applies migrations 1–5, seeds two example venues/menu items and runs the normal API. The demo admin is `admin@rendez.local` / `RendezDemo123!`; seed is restricted to APP_ENV=development and leaves existing records unchanged. Email/password registration always creates a User. Passwords use salted PBKDF2-SHA256; login reuses the existing opaque sessions, without JWT/refresh tokens.
+`make demo` at the repository root starts Docker PostgreSQL, applies migrations 1–5, seeds two example venues/menu items and runs the normal API. The demo admin is `longqt321@rendez.local` / `123123123`; seed is restricted to APP_ENV=development and preserves catalog records and updates the local demo admin password to the seeded value. Email/password registration always creates a User. Passwords use salted PBKDF2-SHA256; login reuses the existing opaque sessions, without JWT/refresh tokens.
 
 Endpoints: POST /v1/auth/register, POST /v1/auth/login, GET /v1/me, DELETE /v1/auth/session, GET /v1/places, GET /v1/places/{id}, GET /v1/favorites, PUT/DELETE /v1/favorites/{id}. Register accepts email/password/display_name; login accepts email/password. Register/login returns token and user. Catalog reads only published places; favorites are owner-scoped and idempotent.
 

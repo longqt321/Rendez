@@ -53,7 +53,7 @@ func TestContributionJourney(t *testing.T) {
 	}
 	user := token("/v1/auth/register", `{"email":"contributor@example.com","password":"TestPass123!","display_name":"Contributor"}`)
 	other := token("/v1/auth/register", `{"email":"other@example.com","password":"TestPass123!","display_name":"Other"}`)
-	admin := token("/v1/auth/login", `{"email":"admin@rendez.local","password":"RendezDemo123!"}`)
+	admin := token("/v1/auth/login", `{"email":"longqt321@rendez.local","password":"123123123"}`)
 	placeID := "00000000-0000-4000-8000-000000000101"
 	if call("GET", "/v1/admin/places", "", user).Code != 403 {
 		t.Fatal("User accessed Admin")
