@@ -14,10 +14,12 @@ class ExploreScreen extends ConsumerWidget {
     final data = ref.watch(placesProvider);
     final places = ref.watch(filteredPlacesProvider);
     final hasFilters =
+        ref.watch(selectedCityProvider) != 'Tất cả thành phố' ||
         ref.watch(searchQueryProvider).isNotEmpty ||
         ref.watch(selectedCategoryProvider) != null ||
         ref.watch(selectedBudgetRangeProvider) != 0;
     void reset() {
+      ref.read(selectedCityProvider.notifier).state = 'Tất cả thành phố';
       ref.read(searchQueryProvider.notifier).state = '';
       ref.read(selectedCategoryProvider.notifier).state = null;
       ref.read(selectedBudgetRangeProvider.notifier).state = 0;
@@ -53,16 +55,6 @@ class ExploreScreen extends ConsumerWidget {
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                         child: Text('${places.length} địa điểm'),
-                      ),
-                    ),
-                  if (hasFilters)
-                    SliverToBoxAdapter(
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: reset,
-                          child: const Text('Bỏ bộ lọc'),
-                        ),
                       ),
                     ),
                   const SliverToBoxAdapter(child: SizedBox(height: 16)),

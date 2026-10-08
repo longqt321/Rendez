@@ -64,6 +64,13 @@ void main() {
         tester.widget<TextField>(find.byType(TextField).first).controller!.text,
         'dolor',
       );
+      container.read(selectedCityProvider.notifier).state = 'Hà Nội';
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Bỏ bộ lọc').first);
+      await tester.pumpAndSettle();
+      expect(container.read(selectedCityProvider), 'Tất cả thành phố');
+      expect(container.read(searchQueryProvider), isEmpty);
+      expect(container.read(filteredPlacesProvider), hasLength(2));
       expect(tester.takeException(), isNull);
     },
   );

@@ -7,6 +7,11 @@ class DiscoveryFilters extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final data = ref.watch(placesProvider);
+    final hasFilters =
+        ref.watch(selectedCityProvider) != 'Tất cả thành phố' ||
+        ref.watch(searchQueryProvider).isNotEmpty ||
+        ref.watch(selectedCategoryProvider) != null ||
+        ref.watch(selectedBudgetRangeProvider) != 0;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Wrap(
@@ -100,6 +105,17 @@ class DiscoveryFilters extends ConsumerWidget {
                   ref.read(selectedBudgetRangeProvider.notifier).state = v!,
             ),
           ),
+          if (hasFilters)
+            TextButton(
+              onPressed: () {
+                ref.read(selectedCityProvider.notifier).state =
+                    'Tất cả thành phố';
+                ref.read(searchQueryProvider.notifier).state = '';
+                ref.read(selectedCategoryProvider.notifier).state = null;
+                ref.read(selectedBudgetRangeProvider.notifier).state = 0;
+              },
+              child: const Text('Bỏ bộ lọc'),
+            ),
         ],
       ),
     );

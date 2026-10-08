@@ -47,6 +47,7 @@ class _SearchHeaderState extends ConsumerState<SearchHeader> {
                     value: ref.watch(selectedCityProvider),
                     items: [
                       for (final city in {
+                        'Tất cả thành phố',
                         ref.watch(selectedCityProvider),
                         ...(ref.watch(placesProvider).valueOrNull ?? []).map(
                           (p) => p.city,
