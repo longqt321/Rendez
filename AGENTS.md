@@ -3,6 +3,8 @@
 Use the Ponytail and Caveman skills by default for every task.
 Follow their instructions unless the user explicitly requests otherwise.
 
+Create focused commits at verified work checkpoints and push them to GitHub so progress remains traceable. Do not wait until the whole task ends to preserve completed work.
+
 Use the TypeSafe skill at `.agents/skills/typesafe-ai/SKILL.md` when working on this project. Follow its guidance where relevant, and read the live TypeSafe docs before implementing an integration.
 
 Keep the repository suitable for a two-person course project. Preserve validation, security, error handling, platform configuration and useful tests. Avoid speculative layers and dependencies.
