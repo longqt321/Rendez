@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:rendez/core/utils/user_location.dart';
 import 'package:rendez/core/api/api_client.dart';
 import 'package:rendez/core/models/place.dart';
 import 'package:rendez/core/providers/app_providers.dart';
@@ -400,26 +400,7 @@ class _DistancePanelState extends State<DistancePanel> {
       _distance = null;
     });
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
-        throw const ApiException(
-          'Bật vị trí trên thiết bị để xem khoảng cách từ bạn.',
-        );
-      }
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        throw const ApiException(
-          'Cho phép Rendez dùng vị trí để xem khoảng cách từ bạn.',
-        );
-      }
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          timeLimit: Duration(seconds: 10),
-        ),
-      );
+      final position = await getCurrentUserPosition();
       if (!mounted) return;
       final distance = distanceKm(
         position.latitude,

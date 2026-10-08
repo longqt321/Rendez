@@ -6,6 +6,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:rendez/core/models/place.dart';
+import 'package:rendez/core/api/api_client.dart';
+import 'package:rendez/core/utils/user_location.dart';
 import 'package:rendez/core/providers/app_providers.dart';
 import 'package:rendez/core/utils/currency_formatter.dart';
 import 'package:rendez/core/utils/estimates.dart';
@@ -21,6 +23,7 @@ class MapViewWidget extends ConsumerStatefulWidget {
 class _MapViewWidgetState extends ConsumerState<MapViewWidget> {
   final _controller = MapController();
   String? _selectedId;
+  Position? _userPosition;
   LatLngBounds? _bounds;
   bool _dirty = false, _tileError = false, _locating = false;
   int _tileVersion = 0;
@@ -49,34 +52,32 @@ class _MapViewWidgetState extends ConsumerState<MapViewWidget> {
   }
 
   Future<void> _locate() async {
-    setState(() => _locating = true);
+    setState(() {
+      _locating = true;
+      _userPosition = null;
+    });
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
-        throw StateError('disabled');
-      }
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        throw StateError('denied');
-      }
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          timeLimit: Duration(seconds: 15),
-        ),
-      );
+      final position = await getCurrentUserPosition();
+      if (!mounted) return;
+      setState(() {
+        _userPosition = position;
+        _bounds = null;
+        _selectedId = null;
+        _dirty = true;
+      });
+      _controller.move(LatLng(position.latitude, position.longitude), 15);
+    } catch (error) {
       if (mounted) {
-        _controller.move(LatLng(position.latitude, position.longitude), 15);
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.clearSnackBars();
+        messenger.showSnackBar(
+          SnackBar(
             content: Text(
-              'Không lấy được vị trí. Kiểm tra quyền vị trí rồi thử lại.',
+              error is ApiException
+                  ? error.message
+                  : 'Không lấy được vị trí. Kiểm tra quyền vị trí rồi thử lại.',
             ),
+            action: SnackBarAction(label: 'Thử lại', onPressed: _locate),
           ),
         );
       }
@@ -155,6 +156,22 @@ class _MapViewWidgetState extends ConsumerState<MapViewWidget> {
                           }
                         },
                       ),
+                      if (_userPosition != null)
+                        CircleLayer(
+                          circles: [
+                            CircleMarker(
+                              point: LatLng(
+                                _userPosition!.latitude,
+                                _userPosition!.longitude,
+                              ),
+                              radius: _userPosition!.accuracy,
+                              useRadiusInMeter: true,
+                              color: scheme.primary.withValues(alpha: .15),
+                              borderColor: scheme.primary.withValues(alpha: .5),
+                              borderStrokeWidth: 1,
+                            ),
+                          ],
+                        ),
                       MarkerClusterLayerWidget(
                         options: MarkerClusterLayerOptions(
                           maxClusterRadius: 60,
@@ -215,6 +232,41 @@ class _MapViewWidgetState extends ConsumerState<MapViewWidget> {
                           ),
                         ),
                       ),
+                      if (_userPosition != null)
+                        MarkerLayer(
+                          markers: [
+                            Marker(
+                              key: const ValueKey('user-position'),
+                              point: LatLng(
+                                _userPosition!.latitude,
+                                _userPosition!.longitude,
+                              ),
+                              width: 48,
+                              height: 48,
+                              child: Tooltip(
+                                message:
+                                    'Vị trí của bạn, sai số khoảng ${formatDistance(_userPosition!.accuracy / 1000)}',
+                                child: Semantics(
+                                  label: 'Vị trí của bạn',
+                                  child: Center(
+                                    child: Container(
+                                      width: 22,
+                                      height: 22,
+                                      decoration: BoxDecoration(
+                                        color: scheme.primary,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: scheme.surface,
+                                          width: 3,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
                   Positioned(
