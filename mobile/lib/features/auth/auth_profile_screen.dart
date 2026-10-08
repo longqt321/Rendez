@@ -225,6 +225,7 @@ class _AuthProfileScreenState extends ConsumerState<AuthProfileScreen> {
               Text('Giao diện', style: theme.textTheme.titleMedium),
               const SizedBox(height: 12),
               DropdownButtonFormField<ThemeMode>(
+                isExpanded: true,
                 initialValue: ref.watch(themeModeProvider),
                 decoration: const InputDecoration(
                   prefixIcon: Icon(Icons.palette_outlined),

@@ -5,6 +5,7 @@ import 'package:rendez/features/contribute/contribute_screen.dart';
 import 'package:rendez/features/auth/auth_profile_screen.dart';
 import 'package:rendez/features/bookmarks/bookmarks_screen.dart';
 import 'package:rendez/features/explore/explore_screen.dart';
+import 'package:rendez/features/explore/map_screen.dart';
 
 class MainScaffold extends ConsumerStatefulWidget {
   const MainScaffold({super.key});
@@ -13,27 +14,35 @@ class MainScaffold extends ConsumerStatefulWidget {
 }
 
 class _MainScaffoldState extends ConsumerState<MainScaffold> {
-  int _index = 1;
+  int _index = 0;
   int? _afterSignIn;
   final _screensKey = GlobalKey();
   static const _icons = [
-    Icons.bookmark_outline,
     Icons.explore_outlined,
+    Icons.map_outlined,
+    Icons.bookmark_outline,
     Icons.add_photo_alternate_outlined,
     Icons.person_outline,
   ];
   static const _selectedIcons = [
-    Icons.bookmark_rounded,
     Icons.explore_rounded,
+    Icons.map_rounded,
+    Icons.bookmark_rounded,
     Icons.add_photo_alternate_rounded,
     Icons.person_rounded,
   ];
-  static const _labels = ['Đã lưu', 'Khám phá', 'Đóng góp', 'Cá nhân'];
+  static const _labels = [
+    'Khám phá',
+    'Bản đồ',
+    'Đã lưu',
+    'Đóng góp',
+    'Cá nhân',
+  ];
   void _select(int index) {
     FocusManager.instance.primaryFocus?.unfocus();
     setState(() {
       _index = index;
-      if (index != 3) _afterSignIn = null;
+      if (index != 4) _afterSignIn = null;
     });
   }
 
@@ -48,27 +57,32 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     });
     return LayoutBuilder(
       builder: (context, constraints) {
-        final wide = constraints.maxWidth >= 760;
+        final wide = constraints.maxWidth >= 840;
         final screens = IndexedStack(
           key: _screensKey,
           index: _index,
           children: [
-            BookmarksScreen(
-              onExplore: () => _select(1),
-              onSignIn: () {
-                _select(3);
-                _afterSignIn = 0;
-              },
+            const _Content(child: ExploreScreen()),
+            const MapScreen(),
+            _Content(
+              child: BookmarksScreen(
+                onExplore: () => _select(0),
+                onSignIn: () {
+                  _select(4);
+                  _afterSignIn = 2;
+                },
+              ),
             ),
-            const ExploreScreen(),
-            ContributeScreen(
-              key: ValueKey(ref.watch(authProvider).user?.id),
-              onSignIn: () {
-                _select(3);
-                _afterSignIn = 2;
-              },
+            _Content(
+              child: ContributeScreen(
+                key: ValueKey(ref.watch(authProvider).user?.id),
+                onSignIn: () {
+                  _select(4);
+                  _afterSignIn = 3;
+                },
+              ),
             ),
-            const AuthProfileScreen(),
+            const _Content(child: AuthProfileScreen()),
           ],
         );
         return Scaffold(
@@ -119,4 +133,16 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
       },
     );
   }
+}
+
+class _Content extends StatelessWidget {
+  final Widget child;
+  const _Content({required this.child});
+  @override
+  Widget build(BuildContext context) => Center(
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 1100),
+      child: child,
+    ),
+  );
 }

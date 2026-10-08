@@ -24,9 +24,7 @@ class MasonryPlaceCard extends ConsumerWidget {
     Widget placeholder() => Container(
       height: imageHeight,
       width: double.infinity,
-      color: coffee
-          ? theme.colorScheme.secondaryContainer
-          : theme.colorScheme.surfaceContainerHighest,
+      color: theme.colorScheme.surfaceContainerHighest,
       child: Center(
         child: Icon(
           coffee ? Icons.local_cafe_rounded : Icons.storefront_rounded,
@@ -53,9 +51,8 @@ class MasonryPlaceCard extends ConsumerWidget {
                 if (place.coverImageUrl.isNotEmpty)
                   CachedNetworkImage(
                     imageUrl: place.coverImageUrl,
-                    height: imageHeight,
                     width: double.infinity,
-                    fit: BoxFit.cover,
+                    fit: BoxFit.fitWidth,
                     placeholder: (_, _) => placeholder(),
                     errorWidget: (_, _, _) => placeholder(),
                   )
@@ -66,6 +63,7 @@ class MasonryPlaceCard extends ConsumerWidget {
                   top: 6,
                   child: BouncingHeartButton(
                     size: 38,
+                    useHeartIcon: false,
                     isSaved: ref.watch(bookmarksProvider).contains(place.id),
                     onTap: () => toggleBookmark(context, ref, place.id),
                   ),
@@ -98,34 +96,11 @@ class MasonryPlaceCard extends ConsumerWidget {
                     style: theme.textTheme.bodySmall,
                   ),
                   const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withValues(
-                        alpha: .5,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          place.fullMenu.isEmpty
-                              ? 'Chưa có bảng giá'
-                              : 'Từ ${CurrencyFormatter.format(place.minPrice)}',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: theme.colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        if (place.fullMenu.isNotEmpty)
-                          Text(
-                            '${place.fullMenu.length} món · đơn giá tham khảo',
-                            style: theme.textTheme.bodySmall,
-                          ),
-                      ],
-                    ),
+                  Text(
+                    place.fullMenu.isEmpty
+                        ? 'Chưa có bảng giá'
+                        : 'Từ ${CurrencyFormatter.format(place.minPrice)}',
+                    style: theme.textTheme.titleMedium,
                   ),
                 ],
               ),

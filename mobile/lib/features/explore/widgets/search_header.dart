@@ -28,38 +28,10 @@ class _SearchHeaderState extends ConsumerState<SearchHeader> {
       if (_search.text != value) _search.text = value;
     });
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  Icons.explore_rounded,
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Rendez',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-              ),
-              const Tooltip(
-                message: 'Giá tham khảo có nguồn đóng góp',
-                child: Icon(Icons.receipt_long_outlined),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
           Row(
             children: [
               Icon(
@@ -100,7 +72,7 @@ class _SearchHeaderState extends ConsumerState<SearchHeader> {
             controller: _search,
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(
-              hintText: 'Tìm quán, món ăn, địa chỉ…',
+              labelText: 'Tìm địa điểm hoặc món ăn',
               prefixIcon: const Icon(Icons.search_rounded),
               suffixIcon: ref.watch(searchQueryProvider).isEmpty
                   ? null

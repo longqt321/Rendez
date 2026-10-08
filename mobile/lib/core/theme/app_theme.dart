@@ -15,14 +15,21 @@ class AppTheme {
         ).copyWith(
           primary: dark ? const Color(0xFFC4B5FD) : const Color(0xFF6D28D9),
           onPrimary: dark ? const Color(0xFF24113F) : Colors.white,
-          surface: dark ? const Color(0xFF211D2B) : Colors.white,
+          onSurface: dark ? const Color(0xFFF5F4F7) : const Color(0xFF1C1917),
+          onSurfaceVariant: dark
+              ? const Color(0xFFC5C1CD)
+              : const Color(0xFF625F66),
+          outlineVariant: dark
+              ? const Color(0xFF413B49)
+              : const Color(0xFFE7E4E8),
+          surface: dark ? const Color(0xFF24212B) : Colors.white,
         );
     final base = ThemeData(useMaterial3: true, colorScheme: scheme);
     final text = GoogleFonts.plusJakartaSansTextTheme(base.textTheme);
     return base.copyWith(
       scaffoldBackgroundColor: dark
-          ? const Color(0xFF15121D)
-          : const Color(0xFFFAF8FF),
+          ? const Color(0xFF15141A)
+          : const Color(0xFFFAF9F7),
       textTheme: text.copyWith(
         headlineMedium: text.headlineMedium?.copyWith(
           fontWeight: FontWeight.w800,
@@ -39,8 +46,8 @@ class AppTheme {
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: dark
-            ? const Color(0xFF15121D)
-            : const Color(0xFFFAF8FF),
+            ? const Color(0xFF15141A)
+            : const Color(0xFFFAF9F7),
         foregroundColor: scheme.onSurface,
         centerTitle: false,
         elevation: 0,
@@ -51,7 +58,7 @@ class AppTheme {
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: scheme.outlineVariant.withValues(alpha: .6)),
         ),
       ),

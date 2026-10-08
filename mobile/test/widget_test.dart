@@ -74,8 +74,8 @@ void main() {
         ),
       );
 
-      expect(find.text('Rendez'), findsOneWidget);
-      expect(find.text('Đà Nẵng & Hội An'), findsOneWidget);
+      expect(find.text('Tìm địa điểm hoặc món ăn'), findsOneWidget);
+      expect(find.text('Tất cả thành phố'), findsOneWidget);
       expect(find.byType(TextField), findsOneWidget);
       expect(find.byIcon(Icons.location_on_rounded), findsOneWidget);
     });

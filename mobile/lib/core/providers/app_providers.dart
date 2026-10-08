@@ -35,7 +35,7 @@ final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.system);
 // City Provider
 final selectedCategoryProvider = StateProvider<String?>((ref) => null);
 
-final selectedCityProvider = StateProvider<String>((ref) => 'Đà Nẵng & Hội An');
+final selectedCityProvider = StateProvider<String>((ref) => 'Tất cả thành phố');
 
 // Vibe Filter Provider (e.g. 'Hẹn hò', 'Tụ tập nhóm', 'Chạy deadline', 'Mở 24/7')
 final selectedVibeFilterProvider = StateProvider<String?>((ref) => null);
@@ -66,7 +66,7 @@ final filteredPlacesProvider = Provider<List<Place>>((ref) {
     if (category != null && place.category != category) return false;
     if (budgetIdx != 0 && place.fullMenu.isEmpty) return false;
     // City filter
-    if (place.city != city) return false;
+    if (city != 'Tất cả thành phố' && place.city != city) return false;
 
     // Search query filter
     if (query.isNotEmpty) {

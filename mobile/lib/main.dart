@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,7 +17,6 @@ class RendezApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
-    const maxWidth = 1100.0;
 
     return MaterialApp(
       title: 'Rendez',
@@ -29,20 +27,6 @@ class RendezApp extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
-      builder: (context, child) {
-        if (!kIsWeb) {
-          return child ?? const SizedBox.shrink();
-        }
-        return ColoredBox(
-          color: Theme.of(context).colorScheme.surfaceContainer,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxWidth),
-              child: child,
-            ),
-          ),
-        );
-      },
       home: const MainScaffold(),
     );
   }

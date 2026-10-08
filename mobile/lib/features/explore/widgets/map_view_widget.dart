@@ -1,365 +1,389 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-
-import 'package:rendez/core/constants/app_colors.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:rendez/core/models/place.dart';
 import 'package:rendez/core/providers/app_providers.dart';
 import 'package:rendez/core/utils/currency_formatter.dart';
+import 'package:rendez/core/utils/estimates.dart';
 import 'package:rendez/features/place_detail/place_detail_screen.dart';
 
 class MapViewWidget extends ConsumerStatefulWidget {
   final List<Place> places;
-
   const MapViewWidget({super.key, required this.places});
-
   @override
   ConsumerState<MapViewWidget> createState() => _MapViewWidgetState();
 }
 
 class _MapViewWidgetState extends ConsumerState<MapViewWidget> {
-  int _selectedIndex = 0;
-  final PageController _pageController = PageController(viewportFraction: 0.88);
-
+  final _controller = MapController();
+  String? _selectedId;
+  LatLngBounds? _bounds;
+  bool _dirty = false, _tileError = false, _locating = false;
+  int _tileVersion = 0;
+  List<Place> get _candidates => widget.places
+      .where((p) => validCoordinates(p.latitude, p.longitude))
+      .toList();
+  LatLng _point(Place p) => LatLng(p.latitude, p.longitude);
   @override
   void dispose() {
-    _pageController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (widget.places.isEmpty) {
-      return const Center(child: Text('Không có địa điểm nào trên bản đồ'));
-    }
+  void didUpdateWidget(covariant MapViewWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.places.any((p) => p.id == _selectedId)) _selectedId = null;
+  }
 
-    return Stack(
-      children: [
-        // Stylized Map Background Canvas
-        Container(
-          width: double.infinity,
-          height: double.infinity,
-          color: const Color(0xFFE5E3DF), // Map tone
-          child: CustomPaint(painter: _MapGridPainter()),
+  void _zoom(double delta) {
+    _controller.move(
+      _controller.camera.center,
+      (_controller.camera.zoom + delta).clamp(2, 19),
+    );
+    setState(() => _dirty = true);
+  }
+
+  Future<void> _locate() async {
+    setState(() => _locating = true);
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        throw StateError('disabled');
+      }
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        throw StateError('denied');
+      }
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          timeLimit: Duration(seconds: 15),
         ),
-
-        // Map Pins Positioned
-        ...List.generate(widget.places.length, (index) {
-          final place = widget.places[index];
-          final isSelected = index == _selectedIndex;
-
-          // Compute pseudo coordinates on screen
-          final double left = 60.0 + (index * 75.0) % 240.0;
-          final double top = 100.0 + (index * 95.0) % 360.0;
-
-          return Positioned(
-            left: left,
-            top: top,
-            child: Semantics(
-              button: true,
-              label:
-                  'Chọn quán ${place.name}, giá từ ${CurrencyFormatter.formatCompact(place.minPrice)}',
-              child: GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() => _selectedIndex = index);
-                  _pageController.animateToPage(
-                    index,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                },
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Price tag pill
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 9,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected ? AppColors.primary : Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.25),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                        border: Border.all(
-                          color: isSelected
-                              ? Colors.white
-                              : AppColors.neutral200,
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (place.isVerified)
-                            Padding(
-                              padding: const EdgeInsets.only(right: 3),
-                              child: Icon(
-                                Icons.verified_rounded,
-                                size: 11,
-                                color: isSelected
-                                    ? Colors.white
-                                    : AppColors.verified,
-                              ),
-                            ),
-                          Text(
-                            CurrencyFormatter.formatCompact(place.minPrice),
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: isSelected
-                                  ? Colors.white
-                                  : AppColors.neutral900,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Pin point
-                    Icon(
-                      Icons.location_on,
-                      size: isSelected ? 26 : 20,
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.neutral800,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }),
-
-        // Top Status Bar Overlay on Map
-        Positioned(
-          top: 16,
-          left: 16,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.95),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.place, size: 14, color: AppColors.primary),
-                const SizedBox(width: 4),
-                Text(
-                  '${widget.places.length} địa điểm minh bạch giá',
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.neutral900,
-                  ),
-                ),
-              ],
+      );
+      if (mounted) {
+        _controller.move(LatLng(position.latitude, position.longitude), 15);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Không lấy được vị trí. Kiểm tra quyền vị trí rồi thử lại.',
             ),
           ),
-        ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
+  }
 
-        // Bottom Place Preview Carousel
-        Positioned(
-          bottom: 24,
-          left: 0,
-          right: 0,
-          height: 120,
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: widget.places.length,
-            onPageChanged: (idx) => setState(() => _selectedIndex = idx),
-            itemBuilder: (ctx, idx) {
-              final p = widget.places[idx];
-              final isSaved = ref.watch(bookmarksProvider).contains(p.id);
-
-              return GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => PlaceDetailScreen(place: p),
-                    ),
-                  );
+  @override
+  Widget build(BuildContext context) {
+    final candidates = _candidates;
+    final visible = candidates
+        .where((p) => _bounds == null || _bounds!.contains(_point(p)))
+        .toList();
+    final selected = candidates.where((p) => p.id == _selectedId).firstOrNull;
+    final scheme = Theme.of(context).colorScheme;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= 840;
+        return Stack(
+          children: [
+            FlutterMap(
+              mapController: _controller,
+              options: MapOptions(
+                // World view is the fallback; no inferred venue coordinates.
+                initialCenter: candidates.isEmpty
+                    ? const LatLng(0, 0)
+                    : _point(candidates.first),
+                initialZoom: candidates.isEmpty ? 2 : 13,
+                initialCameraFit: candidates.length > 1
+                    ? CameraFit.bounds(
+                        bounds: LatLngBounds.fromPoints(
+                          candidates.map(_point).toList(),
+                        ),
+                        padding: const EdgeInsets.all(64),
+                        maxZoom: 15,
+                      )
+                    : null,
+                maxZoom: 19,
+                onTap: (_, _) => setState(() => _selectedId = null),
+                onPositionChanged: (_, gesture) {
+                  if (gesture && !_dirty) setState(() => _dirty = true);
                 },
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 6),
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.neutral200),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                onMapEvent: (event) {
+                  if (event is MapEventMoveEnd ||
+                      event is MapEventScrollWheelZoom) {
+                    if (mounted && !_dirty) setState(() => _dirty = true);
+                  }
+                },
+              ),
+              children: [
+                TileLayer(
+                  key: ValueKey(_tileVersion),
+                  urlTemplate: const String.fromEnvironment(
+                    'MAP_TILE_URL',
+                    defaultValue:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   ),
-                  child: Row(
-                    children: [
-                      // Thumbnail
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(14),
-                        child: CachedNetworkImage(
-                          imageUrl: p.coverImageUrl,
-                          width: 100,
-                          height: double.infinity,
-                          fit: BoxFit.cover,
+                  userAgentPackageName: 'vn.rendez.app',
+                  errorTileCallback: (_, _, _) {
+                    if (!_tileError) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) setState(() => _tileError = true);
+                      });
+                    }
+                  },
+                ),
+                MarkerClusterLayerWidget(
+                  options: MarkerClusterLayerOptions(
+                    maxClusterRadius: 60,
+                    size: const Size(48, 48),
+                    padding: const EdgeInsets.all(64),
+                    markers: [
+                      for (final place in visible)
+                        Marker(
+                          key: ValueKey(place.id),
+                          point: _point(place),
+                          width: 48,
+                          height: 48,
+                          child: IconButton.filled(
+                            tooltip: place.name,
+                            style: IconButton.styleFrom(
+                              backgroundColor: place.id == _selectedId
+                                  ? scheme.primary
+                                  : scheme.surface,
+                              foregroundColor: place.id == _selectedId
+                                  ? scheme.onPrimary
+                                  : scheme.onSurface,
+                              side: BorderSide(
+                                color: scheme.primary,
+                                width: place.id == _selectedId ? 3 : 1,
+                              ),
+                            ),
+                            onPressed: () =>
+                                setState(() => _selectedId = place.id),
+                            icon: Icon(
+                              place.id == _selectedId
+                                  ? Icons.location_on
+                                  : Icons.location_on_outlined,
+                            ),
+                          ),
+                        ),
+                    ],
+                    builder: (_, markers) => Semantics(
+                      label: '${markers.length} địa điểm',
+                      button: true,
+                      child: Container(
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: scheme.primary,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: scheme.onPrimary, width: 2),
+                        ),
+                        child: Text(
+                          '${markers.length}',
+                          style: TextStyle(
+                            color: scheme.onPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 12),
-
-                      // Details
-                      Expanded(
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Column(
+                children: [
+                  IconButton.filled(
+                    tooltip: 'Vị trí của tôi',
+                    onPressed: _locating ? null : _locate,
+                    icon: _locating
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(),
+                          )
+                        : const Icon(Icons.my_location),
+                  ),
+                  IconButton.filled(
+                    tooltip: 'Phóng to',
+                    onPressed: () => _zoom(1),
+                    icon: const Icon(Icons.add),
+                  ),
+                  IconButton.filled(
+                    tooltip: 'Thu nhỏ',
+                    onPressed: () => _zoom(-1),
+                    icon: const Icon(Icons.remove),
+                  ),
+                ],
+              ),
+            ),
+            if (_dirty)
+              Positioned(
+                top: 8,
+                left: 8,
+                child: FilledButton(
+                  onPressed: () => setState(() {
+                    _bounds = _controller.camera.visibleBounds;
+                    _dirty = false;
+                    _selectedId = null;
+                  }),
+                  child: const Text('Tìm trong khu vực này'),
+                ),
+              ),
+            if (visible.isEmpty)
+              Positioned(
+                left: 8,
+                right: 64,
+                top: _dirty ? 64 : 8,
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Text(
+                      candidates.isEmpty
+                          ? 'Chưa có địa điểm có tọa độ'
+                          : 'Không có địa điểm trong khu vực này',
+                    ),
+                  ),
+                ),
+              ),
+            if (_tileError)
+              Positioned(
+                left: 8,
+                top: 112,
+                right: 64,
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Không tải được bản đồ.'),
+                        TextButton(
+                          onPressed: () => setState(() {
+                            _tileError = false;
+                            _tileVersion++;
+                          }),
+                          child: const Text('Thử lại'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            if (selected != null)
+              Positioned(
+                bottom: 56,
+                right: 12,
+                left: wide ? null : 12,
+                width: wide ? 350 : null,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: constraints.maxHeight * .55,
+                  ),
+                  child: Card(
+                    child: SingleChildScrollView(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              p.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.neutral900,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '${p.distanceKm} km · ${p.category}',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: AppColors.neutral500,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.primarySubtle,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                CurrencyFormatter.formatRange(
-                                  p.minPrice,
-                                  p.maxPrice,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    selected.name,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium,
+                                  ),
                                 ),
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.primaryText,
+                                IconButton(
+                                  tooltip: 'Đóng',
+                                  onPressed: () =>
+                                      setState(() => _selectedId = null),
+                                  icon: const Icon(Icons.close),
                                 ),
-                              ),
+                              ],
+                            ),
+                            Text(selected.category),
+                            Text(selected.address),
+                            Text(
+                              selected.fullMenu.isEmpty
+                                  ? 'Chưa có bảng giá'
+                                  : 'Từ ${CurrencyFormatter.format(selected.minPrice)}',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            Wrap(
+                              spacing: 12,
+                              children: [
+                                FilledButton(
+                                  onPressed: () {
+                                    ref.invalidate(
+                                      placeDetailProvider(selected.id),
+                                    );
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            PlaceDetailScreen(place: selected),
+                                      ),
+                                    );
+                                  },
+                                  child: const Text('Chi tiết'),
+                                ),
+                                OutlinedButton(
+                                  onPressed: () =>
+                                      toggleBookmark(context, ref, selected.id),
+                                  child: Text(
+                                    ref
+                                            .watch(bookmarksProvider)
+                                            .contains(selected.id)
+                                        ? 'Bỏ lưu'
+                                        : 'Lưu',
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
-
-                      // Bookmark button with accessible target
-                      Semantics(
-                        button: true,
-                        label: isSaved ? 'Bỏ lưu ${p.name}' : 'Lưu ${p.name}',
-                        child: IconButton(
-                          tooltip: 'Lưu địa điểm',
-                          icon: Icon(
-                            isSaved
-                                ? Icons.bookmark_rounded
-                                : Icons.bookmark_border_rounded,
-                            color: isSaved
-                                ? AppColors.primary
-                                : AppColors.neutral500,
-                          ),
-                          onPressed: () {
-                            HapticFeedback.selectionClick();
-                            ref.read(bookmarksProvider.notifier).toggle(p.id);
-                          },
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-              );
-            },
-          ),
-        ),
-      ],
+              ),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Material(
+                color: scheme.surface,
+                child: TextButton(
+                  onPressed: () => launchUrl(
+                    Uri.parse('https://www.openstreetmap.org/copyright'),
+                  ),
+                  child: const Text('© OpenStreetMap contributors'),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
-}
-
-class _MapGridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final roadPaint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 6
-      ..style = PaintingStyle.stroke;
-
-    final minorRoadPaint = Paint()
-      ..color = const Color(0xFFF4F3F0)
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke;
-
-    final waterPaint = Paint()
-      ..color = const Color(0xFFA5D8F0)
-      ..style = PaintingStyle.fill;
-
-    // Draw stylized river (Han river in Danang)
-    final path = Path()
-      ..moveTo(size.width * 0.75, 0)
-      ..cubicTo(
-        size.width * 0.65,
-        size.height * 0.4,
-        size.width * 0.85,
-        size.height * 0.7,
-        size.width * 0.7,
-        size.height,
-      )
-      ..lineTo(size.width, size.height)
-      ..lineTo(size.width, 0)
-      ..close();
-    canvas.drawPath(path, waterPaint);
-
-    // Draw road grids
-    for (double y = 40; y < size.height; y += 80) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), minorRoadPaint);
-    }
-    for (double x = 40; x < size.width; x += 90) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), minorRoadPaint);
-    }
-
-    // Main thoroughfare
-    canvas.drawLine(
-      Offset(0, size.height * 0.35),
-      Offset(size.width, size.height * 0.4),
-      roadPaint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.4, 0),
-      Offset(size.width * 0.35, size.height),
-      roadPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

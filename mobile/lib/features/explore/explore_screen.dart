@@ -4,6 +4,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:rendez/core/providers/app_providers.dart';
 import 'package:rendez/core/widgets/state_message.dart';
 import 'package:rendez/features/explore/widgets/search_header.dart';
+import 'package:rendez/features/explore/widgets/discovery_filters.dart';
 import 'package:rendez/features/explore/widgets/masonry_place_card.dart';
 
 class ExploreScreen extends ConsumerWidget {
@@ -28,11 +29,15 @@ class ExploreScreen extends ConsumerWidget {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final columns = constraints.maxWidth < 380
+            final columns =
+                constraints.maxWidth < 360 ||
+                    MediaQuery.textScalerOf(context).scale(14) > 18
                 ? 1
-                : constraints.maxWidth < 700
+                : constraints.maxWidth < 840
                 ? 2
-                : 3;
+                : constraints.maxWidth < 1100
+                ? 3
+                : 4;
             return RefreshIndicator(
               onRefresh: () async {
                 ref.invalidate(placesProvider);
@@ -42,139 +47,25 @@ class ExploreScreen extends ConsumerWidget {
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
                   const SliverToBoxAdapter(child: SearchHeader()),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Wrap(
-                        spacing: 10,
-                        runSpacing: 8,
-                        children: [
-                          _FilterPill(
-                            child: DropdownButton<String>(
-                              isExpanded: true,
-                              underline: const SizedBox.shrink(),
-                              value: ref.watch(selectedCategoryProvider),
-                              hint: const Text(
-                                'Loại hình',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              items: [
-                                const DropdownMenuItem<String>(
-                                  value: null,
-                                  child: Text(
-                                    'Loại hình',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                for (final category in {
-                                  ?ref.watch(selectedCategoryProvider),
-                                  ...(data.valueOrNull ?? []).map(
-                                    (p) => p.category,
-                                  ),
-                                })
-                                  DropdownMenuItem(
-                                    value: category,
-                                    child: Text(
-                                      category,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                              ],
-                              onChanged: (v) =>
-                                  ref
-                                          .read(
-                                            selectedCategoryProvider.notifier,
-                                          )
-                                          .state =
-                                      v,
-                            ),
-                          ),
-                          _FilterPill(
-                            child: DropdownButton<int>(
-                              isExpanded: true,
-                              underline: const SizedBox.shrink(),
-                              value: ref.watch(selectedBudgetRangeProvider),
-                              items: const [
-                                DropdownMenuItem(
-                                  value: 0,
-                                  child: Text(
-                                    'Đơn giá',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                DropdownMenuItem(
-                                  value: 1,
-                                  child: Text(
-                                    'Dưới 50k',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                DropdownMenuItem(
-                                  value: 2,
-                                  child: Text(
-                                    '50k–100k',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                DropdownMenuItem(
-                                  value: 3,
-                                  child: Text(
-                                    '100k–200k',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                DropdownMenuItem(
-                                  value: 4,
-                                  child: Text(
-                                    'Từ 200k',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                              onChanged: (v) =>
-                                  ref
-                                          .read(
-                                            selectedBudgetRangeProvider
-                                                .notifier,
-                                          )
-                                          .state =
-                                      v!,
-                            ),
-                          ),
-                        ],
+                  const SliverToBoxAdapter(child: DiscoveryFilters()),
+                  if (data.hasValue)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                        child: Text('${places.length} địa điểm'),
                       ),
                     ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              data.hasValue
-                                  ? '${places.length} địa điểm'
-                                  : 'Khám phá địa điểm',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                          ),
-                          if (hasFilters)
-                            TextButton(
-                              onPressed: reset,
-                              child: const Text('Bỏ bộ lọc'),
-                            ),
-                        ],
+                  if (hasFilters)
+                    SliverToBoxAdapter(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: reset,
+                          child: const Text('Bỏ bộ lọc'),
+                        ),
                       ),
                     ),
-                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
                   data.when(
                     loading: () => const SliverFillRemaining(
                       hasScrollBody: false,
@@ -184,7 +75,7 @@ class ExploreScreen extends ConsumerWidget {
                       child: StateMessage(
                         icon: Icons.wifi_off_rounded,
                         title: 'Chưa tải được địa điểm',
-                        message: '$error',
+                        message: 'Không tải được địa điểm.',
                         actionLabel: 'Thử lại',
                         onAction: () => ref.invalidate(placesProvider),
                       ),
@@ -202,11 +93,11 @@ class ExploreScreen extends ConsumerWidget {
                             ),
                           )
                         : SliverPadding(
-                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                             sliver: SliverMasonryGrid.count(
                               crossAxisCount: columns,
                               mainAxisSpacing: 16,
-                              crossAxisSpacing: 14,
+                              crossAxisSpacing: 12,
                               childCount: places.length,
                               itemBuilder: (_, index) =>
                                   MasonryPlaceCard(place: places[index]),
@@ -221,20 +112,4 @@ class ExploreScreen extends ConsumerWidget {
       ),
     );
   }
-}
-
-class _FilterPill extends StatelessWidget {
-  final Widget child;
-  const _FilterPill({required this.child});
-  @override
-  Widget build(BuildContext context) => Container(
-    width: ((MediaQuery.sizeOf(context).width - 50) / 2).clamp(0, 240),
-    padding: const EdgeInsets.symmetric(horizontal: 14),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surface,
-      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-      borderRadius: BorderRadius.circular(18),
-    ),
-    child: child,
-  );
 }
