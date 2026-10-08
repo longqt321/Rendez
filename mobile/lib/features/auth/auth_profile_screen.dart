@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rendez/core/providers/app_providers.dart';
 
 class AuthProfileScreen extends ConsumerStatefulWidget {
-  const AuthProfileScreen({super.key});
+  final bool returnToAction;
+  const AuthProfileScreen({super.key, this.returnToAction = false});
   @override
   ConsumerState<AuthProfileScreen> createState() => _AuthProfileScreenState();
 }
@@ -37,6 +38,7 @@ class _AuthProfileScreenState extends ConsumerState<AuthProfileScreen> {
       final auth = ref.read(authProvider.notifier);
       if (logout) {
         await auth.logout();
+        if (mounted) ScaffoldMessenger.of(context).clearSnackBars();
       } else if (_register) {
         await auth.register(
           _name.text.trim(),
@@ -48,13 +50,9 @@ class _AuthProfileScreenState extends ConsumerState<AuthProfileScreen> {
       }
       _password.clear();
       if (mounted && !logout) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Đăng nhập thành công. Bạn có thể lưu địa điểm và đóng góp ảnh.',
-            ),
-          ),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Đã đăng nhập')));
+        if (widget.returnToAction) Navigator.pop(context);
       }
     } catch (error) {
       if (mounted) setState(() => _error = '$error');
@@ -67,80 +65,20 @@ class _AuthProfileScreenState extends ConsumerState<AuthProfileScreen> {
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider), theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(auth.isLoggedIn ? 'Góc của bạn' : 'Tài khoản Rendez'),
-      ),
+      appBar: AppBar(title: Text(auth.isLoggedIn ? 'Tài khoản' : 'Đăng nhập')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
           child: ListView(
             padding: const EdgeInsets.all(24),
             children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF6D28D9), Color(0xFFAD46C5)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 36,
-                      color: Colors.white,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      auth.isLoggedIn
-                          ? 'Chào ${auth.user!.name}!'
-                          : 'Chỗ hay, bạn giữ.\nGiá tốt, bạn chia sẻ.',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      auth.isLoggedIn ? auth.user!.email : 'Lưu địa điểm yêu thích và cùng cộng đồng cập nhật giá.',
-                      style: const TextStyle(color: Colors.white, height: 1.5),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
               if (auth.isLoggedIn) ...[
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.bookmarks_rounded,
-                          color: theme.colorScheme.primary,
-                          size: 32,
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${ref.watch(bookmarksProvider).length} địa điểm đã lưu',
-                                style: theme.textTheme.titleMedium,
-                              ),
-                              const Text('Xem lại ở mục Đã lưu'),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                Text(auth.user!.name, style: theme.textTheme.headlineSmall),
+                const SizedBox(height: 8),
+                Text(auth.user!.email),
+                const SizedBox(height: 24),
+              ],
+              if (auth.isLoggedIn) ...[
                 if (auth.role == 'admin') ...[
                   FilledButton.icon(
                     onPressed: () => Navigator.push(
@@ -159,7 +97,7 @@ class _AuthProfileScreenState extends ConsumerState<AuthProfileScreen> {
                 ),
               ] else ...[
                 Text(
-                  _register ? 'Tạo tài khoản của bạn' : 'Chào bạn trở lại',
+                  _register ? 'Tạo tài khoản' : 'Email và mật khẩu',
                   style: theme.textTheme.titleLarge,
                 ),
                 const SizedBox(height: 16),
@@ -181,7 +119,7 @@ class _AuthProfileScreenState extends ConsumerState<AuthProfileScreen> {
                             ),
                             validator: (value) =>
                                 value == null || value.trim().isEmpty
-                                ? 'Nhập tên để mọi người nhận ra bạn'
+                                ? 'Nhập tên hiển thị'
                                 : value.trim().length > 200
                                 ? 'Tên tối đa 200 ký tự'
                                 : null,
@@ -284,10 +222,7 @@ class _AuthProfileScreenState extends ConsumerState<AuthProfileScreen> {
                   ),
                 ),
               const SizedBox(height: 28),
-              Text(
-                'Giao diện theo cách bạn thích',
-                style: theme.textTheme.titleMedium,
-              ),
+              Text('Giao diện', style: theme.textTheme.titleMedium),
               const SizedBox(height: 12),
               DropdownButtonFormField<ThemeMode>(
                 initialValue: ref.watch(themeModeProvider),

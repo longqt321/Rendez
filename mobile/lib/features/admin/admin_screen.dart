@@ -25,7 +25,7 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
     final places = ref.watch(adminPlacesProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Không gian quản trị'),
+        title: const Text('Quản trị'),
         actions: [
           IconButton(
             tooltip: 'Tải lại',
@@ -49,10 +49,7 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Thông tin tốt bắt đầu từ bạn',
-                  style: theme.textTheme.headlineSmall,
-                ),
+                Text('Duyệt đóng góp', style: theme.textTheme.headlineSmall),
                 const SizedBox(height: 8),
                 const Text(
                   'Đối chiếu ảnh gốc, sửa bản nháp rồi duyệt. Chỉ dữ liệu đã duyệt được công khai.',
@@ -81,7 +78,7 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            _showHistory ? 'Đóng góp đã xử lý' : 'Đóng góp cần bạn xem',
+            _showHistory ? 'Đóng góp đã xử lý' : 'Đóng góp',
             style: theme.textTheme.titleLarge,
           ),
           const SizedBox(height: 12),
@@ -149,12 +146,17 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
                           '${item['type'] == 'menu_photo' ? 'Ảnh menu' : 'Ảnh hóa đơn'} · ${statusLabel(item['status'])}',
                         ),
                         trailing: const Icon(Icons.chevron_right),
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ReviewScreen(id: item['id']),
-                          ),
-                        ),
+                        onTap: () {
+                          ref.invalidate(
+                            contributionDetailProvider(item['id']),
+                          );
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ReviewScreen(id: item['id']),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -332,10 +334,13 @@ class _PlaceEditorState extends ConsumerState<PlaceEditor> {
                 (controller: _lat, label: 'Vĩ độ (có thể để trống)'),
                 (controller: _lng, label: 'Kinh độ (có thể để trống)'),
               ])
-                TextField(
-                  controller: field.controller,
-                  enabled: !_busy,
-                  decoration: InputDecoration(labelText: field.label),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: TextField(
+                    controller: field.controller,
+                    enabled: !_busy,
+                    decoration: InputDecoration(labelText: field.label),
+                  ),
                 ),
               ref
                   .watch(lookupsProvider)

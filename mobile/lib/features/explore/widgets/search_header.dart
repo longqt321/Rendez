@@ -60,13 +60,6 @@ class _SearchHeaderState extends ConsumerState<SearchHeader> {
             ],
           ),
           const SizedBox(height: 16),
-          Text(
-            'Đi đâu hôm nay?',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-          const SizedBox(height: 4),
-          const Text('Tìm chỗ hợp gu. Biết giá trước khi đi.'),
-          const SizedBox(height: 12),
           Row(
             children: [
               Icon(

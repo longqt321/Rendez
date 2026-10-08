@@ -175,7 +175,7 @@ func routes(ctx context.Context, pool *pgxpool.Pool, appEnv string) http.Handler
 	})
 	r.Get("/health/ready", func(w http.ResponseWriter, r *http.Request) {
 		if ctx.Err() != nil || ready(r.Context(), pool) != nil {
-			httpx.Error(w, http.StatusServiceUnavailable, "database_unavailable", "Database is not ready", true)
+			httpx.Error(w, http.StatusServiceUnavailable, "database_unavailable", "Máy chủ chưa sẵn sàng. Hãy thử lại.", true)
 			return
 		}
 		httpx.JSON(w, http.StatusOK, map[string]string{"status": "ready"})

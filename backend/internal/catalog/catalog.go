@@ -23,7 +23,7 @@ const placeJSON = `SELECT jsonb_build_object(
  'bill_examples',COALESCE((SELECT jsonb_agg(jsonb_build_object('total',bill_total,'guests',guests_count,'captured_at',captured_at)) FROM contributions WHERE place_id=p.id AND type='bill_photo' AND status='approved'),'[]'::jsonb),
  'min_price',COALESCE((SELECT MIN(price) FROM menu_items WHERE place_id=p.id),0),
  'max_price',COALESCE((SELECT MAX(price) FROM menu_items WHERE place_id=p.id),0),
- 'full_menu',COALESCE((SELECT jsonb_agg(jsonb_build_object('id',id,'name',name,'price',price,'category',category) ORDER BY name) FROM menu_items WHERE place_id=p.id),'[]'::jsonb))
+ 'full_menu',COALESCE((SELECT jsonb_agg(jsonb_build_object('id',m.id,'name',m.name,'price',m.price,'category',m.category,'observed_at',e.captured_at,'reviewed_at',e.reviewed_at) ORDER BY m.name) FROM menu_items m LEFT JOIN contributions e ON e.id=m.contribution_id WHERE m.place_id=p.id),'[]'::jsonb))
  FROM places p JOIN cities c ON c.code=p.city_code JOIN categories cat ON cat.code=p.category_code
  WHERE p.publication_state='published' AND p.deleted_at IS NULL`
 

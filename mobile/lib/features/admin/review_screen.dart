@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rendez/core/api/api_client.dart';
 import 'package:rendez/core/providers/app_providers.dart';
+import 'package:rendez/core/utils/currency_formatter.dart';
 import 'package:rendez/core/widgets/api_image.dart';
+import 'package:rendez/core/widgets/state_message.dart';
+import 'package:rendez/features/auth/auth_profile_screen.dart';
 
 class ReviewScreen extends ConsumerStatefulWidget {
   final String id;
@@ -14,7 +18,7 @@ class ReviewScreen extends ConsumerStatefulWidget {
 class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   final _reason = TextEditingController();
   final _total = TextEditingController();
-  final _guests = TextEditingController(text: '1');
+  final _guests = TextEditingController();
   final List<
     ({
       TextEditingController name,
@@ -123,11 +127,25 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (previous?.user?.id != next.user?.id) _loaded = false;
+    });
     final auth = ref.watch(authProvider);
     if (!auth.isLoggedIn) {
       return Scaffold(
         appBar: AppBar(),
-        body: const Center(child: Text('Đăng nhập để xem đóng góp')),
+        body: StateMessage(
+          icon: Icons.receipt_long_outlined,
+          title: 'Đăng nhập để xem đóng góp',
+          message: '',
+          actionLabel: 'Đăng nhập',
+          onAction: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const AuthProfileScreen(returnToAction: true),
+            ),
+          ),
+        ),
       );
     }
     return Scaffold(
@@ -135,6 +153,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
       body: ref
           .watch(contributionDetailProvider(widget.id))
           .when(
+            skipLoadingOnRefresh: false,
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(
               child: TextButton(
@@ -150,7 +169,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   _add(Map<String, dynamic>.from(item));
                 }
                 _total.text = '${data['bill_total'] ?? ''}';
-                _guests.text = '${data['guests_count'] ?? 1}';
+                _guests.text = '${data['guests_count'] ?? ''}';
                 _loaded = true;
               }
               final canReview =
@@ -199,6 +218,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                                 labelText: 'Tên món',
                               ),
                             ),
+                            const SizedBox(height: 12),
                             Row(
                               children: [
                                 Expanded(
@@ -254,6 +274,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                         labelText: 'Tổng tiền hóa đơn (VNĐ)',
                       ),
                     ),
+                    const SizedBox(height: 12),
                     TextField(
                       controller: _guests,
                       enabled: canReview && !_busy,
@@ -265,6 +286,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                     ),
                   ],
                   if (canReview) ...[
+                    const SizedBox(height: 16),
                     TextField(
                       controller: _reason,
                       enabled: !_busy,
@@ -273,6 +295,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                         labelText: 'Lý do từ chối (bắt buộc nếu từ chối)',
                       ),
                     ),
+                    const SizedBox(height: 12),
                     Wrap(
                       spacing: 8,
                       children: [
@@ -307,6 +330,54 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                     ),
                 ],
               );
+              final content = canReview
+                  ? editor
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          data['status'] == 'approved'
+                              ? 'Nội dung đã duyệt'
+                              : 'Bản đọc từ ảnh · chưa duyệt',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 12),
+                        if (data['type'] == 'menu_photo') ...[
+                          if ((data['draft_items'] as List).isEmpty)
+                            const Text('Chưa đọc được bảng giá từ ảnh'),
+                          for (final row in data['draft_items'])
+                            ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(row['name']),
+                              subtitle: Text(
+                                '${CurrencyFormatter.format(row['price'] as int)} · ${row['category']}',
+                              ),
+                            ),
+                        ] else ...[
+                          Text(
+                            data['bill_total'] == null
+                                ? 'Chưa có tổng tiền'
+                                : 'Tổng hóa đơn: ${CurrencyFormatter.format(data['bill_total'] as int)}',
+                          ),
+                          Text(
+                            data['guests_count'] == null
+                                ? 'Chưa có số khách'
+                                : 'Số khách: ${data['guests_count']}',
+                          ),
+                        ],
+                        if (_error != null)
+                          Text(
+                            _error!,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                        if ((data['ocr_error'] as String).isNotEmpty)
+                          const Text(
+                            'Chưa đọc được ảnh. Admin sẽ kiểm tra thủ công.',
+                          ),
+                      ],
+                    );
               return ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
@@ -322,8 +393,12 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                     }}',
                   ),
                   Text(
-                    'Ngày chụp: ${DateTime.parse(data['captured_at']).toLocal().toString().split(' ').first}',
+                    'Ngày chụp: ${DateFormat('dd/MM/yyyy').format(DateTime.parse(data['captured_at']).toLocal())}',
                   ),
+                  if (data['reviewed_at'] != null)
+                    Text(
+                      'Admin xử lý: ${DateFormat('dd/MM/yyyy').format(DateTime.parse(data['reviewed_at']).toLocal())}',
+                    ),
                   if ((data['rejection_reason'] as String).isNotEmpty)
                     Text('Lý do: ${data['rejection_reason']}'),
                   const SizedBox(height: 16),
@@ -335,10 +410,10 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                             children: [
                               Expanded(child: images),
                               const SizedBox(width: 24),
-                              Expanded(child: editor),
+                              Expanded(child: content),
                             ],
                           )
-                        : Column(children: [images, editor]),
+                        : Column(children: [images, content]),
                   ),
                 ],
               );

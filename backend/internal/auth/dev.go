@@ -68,12 +68,12 @@ func registerDev(r chi.Router, pool *pgxpool.Pool, appEnv string) {
 			return
 		}
 		if err != nil {
-			httpx.Error(w, http.StatusServiceUnavailable, "database_unavailable", "Database is not ready", true)
+			httpx.Error(w, http.StatusServiceUnavailable, "database_unavailable", "Máy chủ chưa sẵn sàng. Hãy thử lại.", true)
 			return
 		}
 		var name, role string
 		if err := pool.QueryRow(req.Context(), `SELECT display_name, role FROM users WHERE id = $1`, userID).Scan(&name, &role); err != nil {
-			httpx.Error(w, http.StatusServiceUnavailable, "database_unavailable", "Database is not ready", true)
+			httpx.Error(w, http.StatusServiceUnavailable, "database_unavailable", "Máy chủ chưa sẵn sàng. Hãy thử lại.", true)
 			return
 		}
 		httpx.JSON(w, http.StatusCreated, map[string]any{

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:rendez/core/api/api_client.dart';
@@ -37,6 +40,7 @@ class PlaceDetailScreen extends ConsumerWidget {
     body: ref
         .watch(placeDetailProvider(place.id))
         .when(
+          skipLoadingOnRefresh: false,
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => StateMessage(
             icon: Icons.storefront_outlined,
@@ -72,11 +76,6 @@ class PlaceDetailScreen extends ConsumerWidget {
                                 size: 18,
                               ),
                             ),
-                            if (detail.isVerified)
-                              const Chip(
-                                label: Text('Admin đã xác nhận'),
-                                avatar: Icon(Icons.verified_outlined, size: 18),
-                              ),
                           ],
                         ),
                         const SizedBox(height: 12),
@@ -101,22 +100,15 @@ class PlaceDetailScreen extends ConsumerWidget {
                   DistancePanel(place: detail),
                   const SizedBox(height: 24),
                   Text(
-                    'Chọn món · dự trù chi phí',
+                    'Bảng giá',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 12),
-                  for (final path in detail.galleryImages)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: ApiImage(path: path),
-                    ),
                   if (detail.fullMenu.isEmpty)
                     const Card(
                       child: Padding(
                         padding: EdgeInsets.all(20),
-                        child: Text(
-                          'Chưa có bảng giá. Bạn có ảnh menu? Hãy chia sẻ để mọi người tham khảo.',
-                        ),
+                        child: Text('Chưa có bảng giá.'),
                       ),
                     ),
                   if (detail.fullMenu.isNotEmpty)
@@ -126,9 +118,66 @@ class PlaceDetailScreen extends ConsumerWidget {
                     ),
                   const SizedBox(height: 16),
                   Text(
-                    'Giá mang tính tham khảo${detail.priceUpdatedAt == null ? '' : ' tại thời điểm cập nhật ${detail.priceUpdatedAt!.toLocal().day}/${detail.priceUpdatedAt!.toLocal().month}/${detail.priceUpdatedAt!.toLocal().year}'}. Không gồm phí dịch vụ và di chuyển.',
+                    'Giá tham khảo theo nguồn đã gửi, có thể thay đổi. Không gồm phí dịch vụ và di chuyển.',
                   ),
+                  if (detail.galleryImages.isNotEmpty)
+                    ExpansionTile(
+                      title: const Text('Ảnh menu nguồn'),
+                      children: [
+                        for (final path in detail.galleryImages)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: ApiImage(path: path),
+                          ),
+                      ],
+                    ),
                   const SizedBox(height: 16),
+                  Builder(
+                    builder: (buttonContext) => OutlinedButton.icon(
+                      icon: const Icon(Icons.share_outlined),
+                      label: const Text('Chia sẻ địa điểm'),
+                      onPressed: () async {
+                        final text =
+                            '${detail.name}\n${detail.address}\nRendez';
+                        final box =
+                            buttonContext.findRenderObject() as RenderBox;
+                        try {
+                          await SharePlus.instance.share(
+                            ShareParams(
+                              text: text,
+                              mailToFallbackEnabled: false,
+                              sharePositionOrigin:
+                                  box.localToGlobal(Offset.zero) & box.size,
+                            ),
+                          );
+                        } catch (_) {
+                          try {
+                            await Clipboard.setData(ClipboardData(text: text));
+                            if (buttonContext.mounted) {
+                              ScaffoldMessenger.of(buttonContext).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Đã sao chép thông tin địa điểm',
+                                  ),
+                                ),
+                              );
+                            }
+                          } catch (_) {
+                            if (buttonContext.mounted) {
+                              ScaffoldMessenger.of(buttonContext).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Chưa chia sẻ được. Hãy thử lại.',
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: () => Navigator.push(
                       context,
@@ -138,7 +187,7 @@ class PlaceDetailScreen extends ConsumerWidget {
                       ),
                     ),
                     icon: const Icon(Icons.add_photo_alternate_outlined),
-                    label: const Text('Chia sẻ ảnh menu hoặc hóa đơn'),
+                    label: const Text('Gửi menu hoặc hóa đơn'),
                   ),
                   if (detail.billExamples.isNotEmpty) ...[
                     const Divider(height: 32),
@@ -153,7 +202,7 @@ class PlaceDetailScreen extends ConsumerWidget {
                           '${CurrencyFormatter.format(bill['total'] as int)} / ${bill['guests']} khách',
                         ),
                         subtitle: Text(
-                          'Khoảng ${CurrencyFormatter.format(((bill['total'] as int) / (bill['guests'] as int)).round())} / người · Ngày ${DateTime.parse(bill['captured_at']).toLocal().toString().split(' ').first}',
+                          'Khoảng ${CurrencyFormatter.format(((bill['total'] as int) / (bill['guests'] as int)).round())} / người · Ảnh chụp ${DateFormat('dd/MM/yyyy').format(DateTime.parse(bill['captured_at']).toLocal())}',
                         ),
                       ),
                     const Text(
@@ -204,6 +253,17 @@ class _CostPanelState extends State<CostPanel> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(item.name, style: theme.textTheme.titleMedium),
+                    Text(
+                      item.observedAt == null
+                          ? 'Chưa có ngày ghi nhận giá'
+                          : 'Ghi nhận ${item.observedAt!.toLocal().day}/${item.observedAt!.toLocal().month}/${item.observedAt!.toLocal().year}',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    if (item.reviewedAt != null)
+                      Text(
+                        'Admin duyệt ${item.reviewedAt!.toLocal().day}/${item.reviewedAt!.toLocal().month}/${item.reviewedAt!.toLocal().year}',
+                        style: theme.textTheme.bodySmall,
+                      ),
                     Row(
                       children: [
                         Expanded(

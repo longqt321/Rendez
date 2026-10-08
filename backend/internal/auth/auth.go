@@ -43,7 +43,7 @@ func Register(r chi.Router, pool *pgxpool.Pool, appEnv string) {
 		hash := sha256.Sum256([]byte(token))
 		if _, err := pool.Exec(req.Context(), `UPDATE sessions SET revoked_at = now()
 			WHERE token_hash = $1 AND revoked_at IS NULL`, hash[:]); err != nil {
-			httpx.Error(w, http.StatusServiceUnavailable, "database_unavailable", "Database is not ready", true)
+			httpx.Error(w, http.StatusServiceUnavailable, "database_unavailable", "Máy chủ chưa sẵn sàng. Hãy thử lại.", true)
 			return
 		}
 		w.WriteHeader(http.StatusNoContent)
@@ -72,10 +72,10 @@ func Current(req *http.Request, pool *pgxpool.Pool) (Principal, error) {
 
 func WriteAccessError(w http.ResponseWriter, err error) {
 	if errors.Is(err, ErrUnauthenticated) {
-		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "Sign in is required", false)
+		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "Đăng nhập để tiếp tục.", false)
 		return
 	}
-	httpx.Error(w, http.StatusServiceUnavailable, "database_unavailable", "Database is not ready", true)
+	httpx.Error(w, http.StatusServiceUnavailable, "database_unavailable", "Máy chủ chưa sẵn sàng. Hãy thử lại.", true)
 }
 
 func RequireAdmin(w http.ResponseWriter, req *http.Request, pool *pgxpool.Pool) (Principal, bool) {
@@ -85,7 +85,7 @@ func RequireAdmin(w http.ResponseWriter, req *http.Request, pool *pgxpool.Pool) 
 		return Principal{}, false
 	}
 	if principal.Role != "admin" {
-		httpx.Error(w, http.StatusForbidden, "forbidden", "Admin access is required", false)
+		httpx.Error(w, http.StatusForbidden, "forbidden", "Bạn không có quyền quản trị.", false)
 		return Principal{}, false
 	}
 	return principal, true

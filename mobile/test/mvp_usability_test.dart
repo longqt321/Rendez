@@ -34,6 +34,8 @@ final place = Place.fromJson({
       'name': 'Cà phê sữa đá đặc biệt có tên dài',
       'category': 'Đồ uống',
       'price': 35000,
+      'observed_at': '2024-01-15T00:00:00Z',
+      'reviewed_at': '2026-10-07T00:00:00Z',
     },
   ],
 });
@@ -91,12 +93,12 @@ void main() {
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -350));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
-        find.text('Chưa tìm thấy chỗ hợp ý'),
+        find.text('Không tìm thấy địa điểm'),
         250,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pumpAndSettle();
-      expect(find.text('Chưa tìm thấy chỗ hợp ý'), findsOneWidget);
+      expect(find.text('Không tìm thấy địa điểm'), findsOneWidget);
       await tester.scrollUntilVisible(
         find.widgetWithText(FilledButton, 'Bỏ bộ lọc'),
         180,
@@ -114,7 +116,7 @@ void main() {
         tester.widget<TextField>(find.byType(TextField)).controller!.text,
         isEmpty,
       );
-      expect(find.text('1 địa điểm dành cho bạn'), findsOneWidget);
+      expect(find.text('1 địa điểm'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -167,6 +169,8 @@ void main() {
       await tester.tap(find.byTooltip('Thêm Nước lọc'));
       await tester.pumpAndSettle();
       expect(find.text('Tổng dự kiến: 0đ · khoảng 0đ / người'), findsOneWidget);
+      expect(find.text('Ghi nhận 15/1/2024'), findsOneWidget);
+      expect(find.text('Admin duyệt 7/10/2026'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -184,9 +188,54 @@ void main() {
       expect(find.byType(NavigationBar), findsNothing);
       await tester.tap(find.text('Đóng góp'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Đăng nhập để đóng góp'));
+      await tester.tap(
+        find.widgetWithText(FilledButton, 'Đăng nhập để đóng góp'),
+      );
       await tester.pumpAndSettle();
-      expect(find.text('Tài khoản Rendez'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Đăng nhập'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+  testWidgets(
+    'Contribution inputs survive switching between phone and desktop',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authProvider.overrideWith(
+              (ref) => _AdminAuth(ref.watch(apiProvider)),
+            ),
+            placesProvider.overrideWith((ref) async => [place]),
+            adminPlacesProvider.overrideWith((ref) async => []),
+            lookupsProvider.overrideWith(
+              (ref) async => {'cities': [], 'categories': []},
+            ),
+            liveContributionsProvider.overrideWith((ref) async => []),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const MainScaffold(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Đóng góp'));
+      await tester.pumpAndSettle();
+      final name = find.widgetWithText(TextField, 'Tên địa điểm mới');
+      await tester.enterText(name, 'Tên địa điểm đang nhập');
+      tester.testTextInput.hide();
+      for (final width in [1100.0, 390.0]) {
+        tester.view.physicalSize = Size(width, 844);
+        await tester.pumpAndSettle();
+        expect(
+          tester.widget<TextField>(name).controller!.text,
+          'Tên địa điểm đang nhập',
+        );
+      }
       expect(tester.takeException(), isNull);
     },
   );

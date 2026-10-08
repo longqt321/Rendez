@@ -16,6 +16,7 @@ class ApiClient {
   final String baseUrl;
   final http.Client _client = http.Client();
   String? token;
+  void Function()? onSessionExpired;
 
   ApiClient()
     : baseUrl = configuredUrl.isNotEmpty
@@ -56,6 +57,12 @@ class ApiClient {
     return _send(request, timeout: const Duration(seconds: 60));
   }
 
+  void _checkSession(int status, String? requestToken) {
+    if (status == 401 && requestToken != null && token == requestToken) {
+      onSessionExpired?.call();
+    }
+  }
+
   Future<dynamic> _send(
     http.BaseRequest request, {
     Duration timeout = const Duration(seconds: 40),
@@ -65,6 +72,10 @@ class ApiClient {
         await _client.send(request).timeout(timeout),
       ).timeout(timeout);
       final data = response.body.isEmpty ? null : jsonDecode(response.body);
+      _checkSession(
+        response.statusCode,
+        request.headers['Authorization']?.replaceFirst('Bearer ', ''),
+      );
       if (response.statusCode >= 400) {
         throw ApiException(
           data?['error']?['message'] as String? ?? 'Yêu cầu thất bại',
@@ -82,13 +93,17 @@ class ApiClient {
   }
 
   Future<Uint8List> image(String path) async {
+    final requestToken = token;
     try {
       final response = await _client
           .get(
             Uri.parse('$baseUrl$path'),
-            headers: token == null ? {} : {'Authorization': 'Bearer $token'},
+            headers: requestToken == null
+                ? {}
+                : {'Authorization': 'Bearer $requestToken'},
           )
           .timeout(const Duration(seconds: 15));
+      _checkSession(response.statusCode, requestToken);
       if (response.statusCode != 200) {
         throw const ApiException('Không đọc được ảnh');
       }

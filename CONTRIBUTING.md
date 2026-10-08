@@ -15,9 +15,9 @@ Chạy `make check` trước PR. Thay đổi SQL/session cần chạy `make inte
 
 ## Migration và dữ liệu
 
-Chỉ `backend/migrations/core` được Goose chạy. `migrations/drafts` lưu SQL chưa hoàn thiện. Khi triển khai catalog, chuyển bản nháp vào core, cập nhật schema version và kiểm tra migration/readiness cùng nhau.
+Chỉ `backend/migrations/core` được Goose chạy. `migrations/drafts` lưu SQL chưa hoàn thiện. Catalog 00003 đã chuyển vào core; API hiện yêu cầu schema 4. Khi thêm migration, cập nhật schema version và kiểm tra migration/readiness cùng nhau.
 
-Không sửa migration đã được chia sẻ/applied; thêm forward migration. Không reset DB hoặc xóa volume trong refactor. Integration tests dùng Compose project riêng, cổng tự cấp và tmpfs; tự dọn container kể cả khi test lỗi. Không dùng PostgreSQL hệ thống hoặc `DATABASE_URL` phát triển. `/dev/login` và seed fixtures chỉ có trong dev build, với `APP_ENV=development`.
+Không sửa migration đã được chia sẻ/applied; thêm forward migration. Không reset DB hoặc xóa volume trong refactor. Integration tests dùng Compose project riêng, cổng tự cấp và tmpfs; tự dọn container kể cả khi test lỗi. Không dùng PostgreSQL hệ thống hoặc `DATABASE_URL` phát triển. `/dev/login` và seed fixtures cũ chỉ có trong dev build. Seed demo catalog/tài khoản dùng build bình thường nhưng vẫn yêu cầu `APP_ENV=development`.
 
 ## Phạm vi đồ án
 

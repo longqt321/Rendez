@@ -32,6 +32,13 @@ void main() {
     await bookmarks.load();
     await bookmarks.toggle(places.first.id);
     expect(container.read(bookmarksProvider), contains(places.first.id));
+    // Undo restores a known state; repeated requests must remain idempotent.
+    await bookmarks.setSaved(places.first.id, false);
+    await bookmarks.setSaved(places.first.id, false);
+    expect(container.read(bookmarksProvider), isEmpty);
+    await bookmarks.setSaved(places.first.id, true);
+    await bookmarks.setSaved(places.first.id, true);
+    expect(container.read(bookmarksProvider), contains(places.first.id));
     await auth.logout();
     expect(container.read(bookmarksProvider), isEmpty);
     await auth.login(email, 'FlutterPass123!');
@@ -45,7 +52,15 @@ void main() {
     );
     await container.read(bookmarksProvider.notifier).load();
     expect(container.read(bookmarksProvider), isEmpty);
-    await auth.logout();
+    final api = container.read(apiProvider);
+    await api.request('DELETE', '/v1/auth/session');
+    await expectLater(
+      api.request('GET', '/v1/me'),
+      throwsA(isA<ApiException>()),
+    );
+    expect(container.read(authProvider).isLoggedIn, isFalse);
+    expect(api.token, isNull);
+    expect(container.read(bookmarksProvider), isEmpty);
     await expectLater(
       auth.login(email, 'WrongPass123!'),
       throwsA(isA<ApiException>()),
@@ -83,7 +98,14 @@ void main() {
     expect(find.text('Rendez Demo Café'), findsWidgets);
     await tester.tap(find.text('Đã lưu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Rendez Demo Café').hitTestable().first);
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Rendez Demo Café').hitTestable().first);
+      final places = await container.read(placesProvider.future);
+      final cafe = places.firstWhere(
+        (place) => place.name == 'Rendez Demo Café',
+      );
+      await container.read(placeDetailProvider(cafe.id).future);
+    });
     await tester.pumpAndSettle();
     expect(find.text('Cà phê sữa'), findsOneWidget);
     expect(find.textContaining('35.000đ'), findsOneWidget);
@@ -216,7 +238,7 @@ void main() {
     );
   }, skip: !const bool.fromEnvironment('LIVE_API_TEST'));
 
-  testWidgets('Admin edits OCR draft and approves from actual review screen', (
+  testWidgets('Admin review shows the server result after competing approval', (
     tester,
   ) async {
     final previous = HttpOverrides.current;
@@ -267,6 +289,21 @@ void main() {
     expect(tester.widget<FilledButton>(approve).onPressed, isNotNull);
     // Dispatch in the real async zone: fake widget timers must not time out HTTP.
     await tester.runAsync(() async {
+      // Another client finishes review while this screen retains unsaved edits.
+      await container.read(apiProvider).request(
+        'POST',
+        '/v1/admin/contributions/$id/review',
+        {
+          'decision': 'approved',
+          'items': [
+            {
+              'name': 'Server confirmed coffee',
+              'price': 35000,
+              'category': 'Drinks',
+            },
+          ],
+        },
+      );
       await tester.tap(approve);
       await Future<void>.delayed(const Duration(milliseconds: 150));
       await container.read(contributionDetailProvider(id).future);
@@ -289,6 +326,9 @@ void main() {
     await tester.drag(find.byType(ListView).first, const Offset(0, 1800));
     await tester.pumpAndSettle();
     expect(find.text('Trạng thái: Đã duyệt'), findsOneWidget);
+    expect(find.text('Server confirmed coffee'), findsOneWidget);
+    expect(find.text('UI verified coffee'), findsNothing);
+    expect(find.text('Đóng góp đã được xử lý'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
     container.read(apiProvider).close();

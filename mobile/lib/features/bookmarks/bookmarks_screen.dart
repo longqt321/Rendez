@@ -24,12 +24,12 @@ class BookmarksScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Bộ sưu tập của bạn')),
+      appBar: AppBar(title: const Text('Đã lưu')),
       body: !ref.watch(authProvider).isLoggedIn
           ? StateMessage(
               icon: Icons.bookmarks_outlined,
-              title: 'Giữ lại những chỗ bạn thích',
-              message: 'Đăng nhập để lưu địa điểm và tìm lại khi lên kế hoạch đi chơi.',
+              title: 'Đăng nhập để lưu địa điểm',
+              message: 'Địa điểm đã lưu được giữ theo tài khoản.',
               actionLabel: 'Đăng nhập',
               onAction: signIn,
             )
@@ -62,9 +62,9 @@ class BookmarksScreen extends ConsumerWidget {
                     if (saved.isEmpty) {
                       return StateMessage(
                         icon: Icons.favorite_border_rounded,
-                        title: 'Chỗ hẹn tiếp theo nằm ở đâu?',
-                        message: 'Chạm vào trái tim trên địa điểm để lưu vào bộ sưu tập. Địa điểm đã ẩn sẽ không xuất hiện ở đây.',
-                        actionLabel: onExplore == null ? null : 'Khám phá ngay',
+                        title: 'Chưa có địa điểm đã lưu',
+                        message: 'Chạm biểu tượng lưu trên địa điểm.',
+                        actionLabel: onExplore == null ? null : 'Khám phá',
                         onAction: onExplore,
                       );
                     }

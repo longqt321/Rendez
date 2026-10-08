@@ -1,5 +1,8 @@
 # Feature Specification: Module 3 - Distance & Cost Estimation
 
+> Triển khai local hiện hành: [phạm vi hoàn thiện mức 2](../000-local-completion/spec.md). Quyết định local ở đó thay thế cơ chế Draft khác biệt trong tài liệu này.
+
+
 **Feature Branch**: `feature/003-distance-and-cost-estimation`  
 **Created**: 2026-09-12  
 **Status**: Draft  

@@ -81,7 +81,7 @@ func TestContributionJourney(t *testing.T) {
 		var body bytes.Buffer
 		m := multipart.NewWriter(&body)
 		m.WriteField("type", kind)
-		m.WriteField("captured_at", time.Now().UTC().Format(time.RFC3339))
+		m.WriteField("captured_at", "2024-01-15T00:00:00Z")
 		if newPlace {
 			m.WriteField("place_name", "Community Draft")
 			m.WriteField("address", "Community Address")
@@ -189,6 +189,18 @@ func TestContributionJourney(t *testing.T) {
 	public := call("GET", "/v1/places/"+data.PlaceID, "", "")
 	if public.Code != 200 || !strings.Contains(public.Body.String(), "39000") {
 		t.Fatalf("approval not persisted %s", public.Body)
+	}
+	var evidence struct {
+		Menu []struct {
+			ObservedAt time.Time `json:"observed_at"`
+			ReviewedAt time.Time `json:"reviewed_at"`
+		} `json:"full_menu"`
+	}
+	if err := json.Unmarshal(public.Body.Bytes(), &evidence); err != nil || len(evidence.Menu) != 1 {
+		t.Fatalf("missing menu provenance: %s", public.Body)
+	}
+	if evidence.Menu[0].ObservedAt.Format(time.RFC3339) != "2024-01-15T00:00:00Z" || !evidence.Menu[0].ReviewedAt.After(evidence.Menu[0].ObservedAt) {
+		t.Fatal("review must not reset historical observation date")
 	}
 	if call("GET", publicImage, "", "").Code != 200 {
 		t.Fatal("approved menu image unavailable")

@@ -5,9 +5,12 @@ class MenuItem {
   final String name;
   final int price;
   final String category;
+  final DateTime? observedAt, reviewedAt;
 
   const MenuItem({
     this.id = '',
+    this.observedAt,
+    this.reviewedAt,
     required this.name,
     required this.price,
     required this.category,
@@ -98,6 +101,12 @@ class Place {
               name: item['name'] as String,
               category: item['category'] as String,
               price: (item['price'] as num).toInt(),
+              observedAt: DateTime.tryParse(
+                item['observed_at'] as String? ?? '',
+              ),
+              reviewedAt: DateTime.tryParse(
+                item['reviewed_at'] as String? ?? '',
+              ),
             ),
           )
           .toList(),

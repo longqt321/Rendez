@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:rendez/core/providers/app_providers.dart';
@@ -20,7 +21,10 @@ class RendezApp extends ConsumerWidget {
     const maxWidth = 1100.0;
 
     return MaterialApp(
-      title: 'Rendez - Khám phá không gian & minh bạch giá',
+      title: 'Rendez',
+      locale: const Locale('vi'),
+      supportedLocales: const [Locale('vi')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

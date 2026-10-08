@@ -101,7 +101,7 @@ class ExploreScreen extends ConsumerWidget {
                                 DropdownMenuItem(
                                   value: 0,
                                   child: Text(
-                                    'Mức giá',
+                                    'Đơn giá',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -161,7 +161,7 @@ class ExploreScreen extends ConsumerWidget {
                           Expanded(
                             child: Text(
                               data.hasValue
-                                  ? '${places.length} địa điểm dành cho bạn'
+                                  ? '${places.length} địa điểm'
                                   : 'Khám phá địa điểm',
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
@@ -193,10 +193,10 @@ class ExploreScreen extends ConsumerWidget {
                         ? SliverToBoxAdapter(
                             child: StateMessage(
                               icon: Icons.travel_explore_rounded,
-                              title: 'Chưa tìm thấy chỗ hợp ý',
+                              title: 'Không tìm thấy địa điểm',
                               message: hasFilters
-                                  ? 'Thử tên khác hoặc bỏ bộ lọc để khám phá thêm.'
-                                  : 'Chưa có địa điểm tại thành phố này. Hãy chọn thành phố khác.',
+                                  ? 'Thử thay đổi bộ lọc.'
+                                  : 'Chưa có địa điểm tại thành phố này.',
                               actionLabel: hasFilters ? 'Bỏ bộ lọc' : null,
                               onAction: hasFilters ? reset : null,
                             ),

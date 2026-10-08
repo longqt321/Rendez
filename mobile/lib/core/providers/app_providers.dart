@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rendez/core/api/api_client.dart';
 import 'package:rendez/core/models/place.dart';
 import 'package:rendez/core/models/user.dart';
+import 'package:rendez/features/auth/auth_profile_screen.dart';
 
 final apiProvider = Provider<ApiClient>((ref) {
   final api = ApiClient();
@@ -132,13 +133,24 @@ class BookmarksNotifier extends StateNotifier<Set<String>> {
     }
   }
 
-  Future<void> toggle(String placeId) async {
+  final Set<String> _pending = {};
+
+  Future<void> toggle(String placeId) =>
+      setSaved(placeId, !state.contains(placeId));
+
+  Future<void> setSaved(String placeId, bool saved) async {
     final token = api.token;
     if (token == null) throw const ApiException('Đăng nhập để lưu địa điểm');
-    final saved = state.contains(placeId);
-    await api.request(saved ? 'DELETE' : 'PUT', '/v1/favorites/$placeId');
-    if (!mounted || api.token != token) return;
-    state = saved ? ({...state}..remove(placeId)) : {...state, placeId};
+    if (!_pending.add(placeId)) {
+      throw const ApiException('Đang cập nhật trạng thái lưu');
+    }
+    try {
+      await api.request(saved ? 'PUT' : 'DELETE', '/v1/favorites/$placeId');
+      if (!mounted || api.token != token) return;
+      state = saved ? {...state, placeId} : ({...state}..remove(placeId));
+    } finally {
+      _pending.remove(placeId);
+    }
   }
 
   bool isBookmarked(String placeId) => state.contains(placeId);
@@ -162,7 +174,18 @@ class AuthState {
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final ApiClient api;
-  AuthNotifier(this.api) : super(const AuthState(isLoggedIn: false));
+  AuthNotifier(this.api) : super(const AuthState(isLoggedIn: false)) {
+    api.onSessionExpired = () {
+      api.token = null;
+      if (mounted) state = const AuthState(isLoggedIn: false);
+    };
+  }
+  @override
+  void dispose() {
+    api.onSessionExpired = null;
+    super.dispose();
+  }
+
   Future<void> login(String email, String password) =>
       _authenticate('/v1/auth/login', {'email': email, 'password': password});
   Future<void> register(String name, String email, String password) =>
@@ -218,8 +241,58 @@ Future<void> toggleBookmark(
   WidgetRef ref,
   String id,
 ) async {
+  if (!ref.read(authProvider).isLoggedIn) {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const AuthProfileScreen(returnToAction: true),
+      ),
+    );
+    if (!context.mounted || !ref.read(authProvider).isLoggedIn) return;
+    await ref.read(bookmarksProvider.notifier).load();
+    if (!context.mounted) return;
+    if (ref.read(bookmarksStatusProvider).hasError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Chưa tải được trạng thái lưu. Hãy thử lại.'),
+        ),
+      );
+      return;
+    }
+    if (ref.read(bookmarksProvider).contains(id)) return;
+  }
   try {
     await ref.read(bookmarksProvider.notifier).toggle(id);
+    if (!context.mounted) return;
+    final saved = ref.read(bookmarksProvider).contains(id);
+    final owner = ref.read(authProvider).user?.id;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(saved ? 'Đã lưu địa điểm' : 'Đã bỏ lưu'),
+        action: SnackBarAction(
+          label: 'Hoàn tác',
+          onPressed: () async {
+            if (!context.mounted || ref.read(authProvider).user?.id != owner) {
+              return;
+            }
+            try {
+              await ref.read(bookmarksProvider.notifier).setSaved(id, !saved);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(const SnackBar(content: Text('Đã hoàn tác')));
+              }
+            } catch (error) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text('$error')));
+              }
+            }
+          },
+        ),
+      ),
+    );
   } catch (error) {
     if (context.mounted) {
       ScaffoldMessenger.of(context)

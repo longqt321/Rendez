@@ -72,3 +72,6 @@ app.*.map.json
 **/ios/Flutter/flutter_export_environment.sh
 **/ios/Flutter/flutter_assets/
 **/ios/Runner/GeneratedPluginRegistrant.*
+
+# Private local contribution images
+/backend/data/

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:rendez/core/api/api_client.dart';
 import 'package:rendez/core/providers/app_providers.dart';
 import 'package:rendez/features/admin/review_screen.dart';
@@ -64,8 +65,16 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
           _message = null;
         });
       }
-    } catch (error) {
-      if (mounted) setState(() => _message = '$error');
+    } on ApiException catch (error) {
+      if (mounted) setState(() => _message = error.message);
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _message = camera
+              ? 'Không mở được máy ảnh. Kiểm tra quyền truy cập rồi thử lại.'
+              : 'Không mở được ảnh. Kiểm tra quyền truy cập rồi thử lại.',
+        );
+      }
     }
   }
 
@@ -105,7 +114,11 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
         });
       }
     } catch (error) {
-      if (mounted) setState(() => _message = '$error');
+      if (mounted) {
+        setState(() => _message = '$error');
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$error')));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -117,14 +130,16 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
       return Scaffold(
         body: StateMessage(
           icon: Icons.add_photo_alternate_outlined,
-          title: 'Giúp mọi người biết giá trước khi đi',
-          message: 'Chia sẻ ảnh menu hoặc hóa đơn. Đóng góp được kiểm tra trước khi công khai; ảnh hóa đơn luôn giữ riêng.',
+          title: 'Đăng nhập để đóng góp',
+          message: 'Gửi ảnh menu hoặc hóa đơn để Admin duyệt.',
           actionLabel: 'Đăng nhập để đóng góp',
           onAction:
               widget.onSignIn ??
               () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AuthProfileScreen()),
+                MaterialPageRoute(
+                  builder: (_) => const AuthProfileScreen(returnToAction: true),
+                ),
               ),
         ),
       );
@@ -155,35 +170,15 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
               );
     final lookups = ref.watch(lookupsProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Chia sẻ giá, giúp cả cộng đồng')),
+      appBar: AppBar(title: const Text('Gửi đóng góp')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 760),
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(18),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.auto_awesome_rounded,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Một tấm ảnh, nhiều lựa chọn tốt hơn',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Ảnh menu đã duyệt giúp mọi người tham khảo giá. Ảnh hóa đơn giữ riêng; hãy che thông tin cá nhân trước khi gửi.',
-                      ),
-                    ],
-                  ),
-                ),
+              const Text(
+                'Ảnh menu chỉ công khai sau khi duyệt. Ảnh hóa đơn giữ riêng; che thông tin cá nhân trước khi gửi.',
               ),
               const SizedBox(height: 24),
               Text(
@@ -333,8 +328,10 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
-              const Text(
-                '1–5 ảnh JPG/PNG, mỗi ảnh dưới 10MB. Chụp trọn bảng giá, tránh lóa và mờ.',
+              Text(
+                _kind == 'bill_photo'
+                    ? '1–5 ảnh JPG/PNG, mỗi ảnh dưới 10MB. Chụp rõ các khoản và tổng tiền.'
+                    : '1–5 ảnh JPG/PNG, mỗi ảnh dưới 10MB. Chụp trọn bảng giá, tránh lóa và mờ.',
               ),
               const SizedBox(height: 12),
               Wrap(
@@ -437,15 +434,20 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
                             contentPadding: EdgeInsets.zero,
                             title: Text(item['place_name']),
                             subtitle: Text(
-                              '${statusLabel(item['status'])}${item['rejection_reason'] == '' ? '' : '\n${item['rejection_reason']}'}',
+                              '${item['type'] == 'bill_photo' ? 'Ảnh hóa đơn' : 'Ảnh menu'} · ${statusLabel(item['status'])}\nGửi ${DateFormat('dd/MM/yyyy').format(DateTime.parse(item['created_at']).toLocal())}${item['rejection_reason'] == '' ? '' : '\n${item['rejection_reason']}'}',
                             ),
                             trailing: const Icon(Icons.chevron_right),
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => ReviewScreen(id: item['id']),
-                              ),
-                            ),
+                            onTap: () {
+                              ref.invalidate(
+                                contributionDetailProvider(item['id']),
+                              );
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ReviewScreen(id: item['id']),
+                                ),
+                              );
+                            },
                           ),
                       ],
                     ),

@@ -45,29 +45,33 @@ class _ApiImageState extends ConsumerState<ApiImage> {
           child: Center(child: CircularProgressIndicator()),
         );
       }
-      return InkWell(
-        onTap: () => showDialog<void>(
-          context: context,
-          builder: (_) => Dialog(
-            child: Stack(
-              children: [
-                InteractiveViewer(
-                  child: Image.memory(snapshot.data!, fit: BoxFit.contain),
-                ),
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  child: IconButton(
-                    tooltip: 'Đóng ảnh',
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
+      return Semantics(
+        label: 'Xem ảnh nguồn',
+        button: true,
+        child: InkWell(
+          onTap: () => showDialog<void>(
+            context: context,
+            builder: (_) => Dialog(
+              child: Stack(
+                children: [
+                  InteractiveViewer(
+                    child: Image.memory(snapshot.data!, fit: BoxFit.contain),
                   ),
-                ),
-              ],
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: IconButton.filled(
+                      tooltip: 'Đóng ảnh',
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
+          child: Image.memory(snapshot.data!, height: 220, fit: BoxFit.contain),
         ),
-        child: Image.memory(snapshot.data!, height: 220, fit: BoxFit.contain),
       );
     },
   );

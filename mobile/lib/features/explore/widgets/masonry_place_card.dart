@@ -21,35 +21,30 @@ class MasonryPlaceCard extends ConsumerWidget {
     final coffee =
         place.category.toLowerCase().contains('cà phê') ||
         place.category.toLowerCase().contains('cafe');
-    final tint = coffee ? const Color(0xFFFFD9B8) : const Color(0xFFD8D1FF);
     Widget placeholder() => Container(
       height: imageHeight,
       width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            tint,
-            coffee ? const Color(0xFFFFEED6) : const Color(0xFFE7F6D7),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
+      color: coffee
+          ? theme.colorScheme.secondaryContainer
+          : theme.colorScheme.surfaceContainerHighest,
       child: Center(
         child: Icon(
           coffee ? Icons.local_cafe_rounded : Icons.storefront_rounded,
           size: 54,
-          color: const Color(0xFF453454),
+          color: theme.colorScheme.onSurfaceVariant,
         ),
       ),
     );
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => PlaceDetailScreen(place: place)),
-        ),
+        onTap: () {
+          ref.invalidate(placeDetailProvider(place.id));
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => PlaceDetailScreen(place: place)),
+          );
+        },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -132,25 +127,6 @@ class MasonryPlaceCard extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  if (place.isVerified) ...[
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.verified_outlined,
-                          size: 15,
-                          color: theme.colorScheme.primary,
-                        ),
-                        const SizedBox(width: 4),
-                        const Expanded(
-                          child: Text(
-                            'Admin đã xác nhận',
-                            style: TextStyle(fontSize: 11),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
                 ],
               ),
             ),
