@@ -13,6 +13,8 @@ Tài liệu này là hợp đồng triển khai local hiện hành. Khi khác bi
 
 ## 1. Tài khoản
 
+Quyết định UI ngày 2026-10-08: app mở bằng màn hình đăng nhập/đăng ký; đăng nhập thành công mới vào Khám phá. Đăng xuất hoặc session bị thu hồi/hết hạn đưa về đăng nhập và xóa các màn hình chi tiết khỏi ngăn xếp điều hướng. API địa điểm công khai giữ hợp đồng hiện hành; UI không cung cấp đường bỏ qua đăng nhập.
+
 Email/mật khẩu và tên hiển thị; đăng ký luôn tạo User. Giữ password hashing PBKDF2-SHA256 có salt, opaque session lưu hash trong DB, hết hạn sau 7 ngày và thu hồi khi logout. Không cần JWT/refresh hoặc Google/Apple cho local.
 
 Flutter giữ token trong bộ nhớ, không ghi token ra storage thường. Mở lại app cần đăng nhập lại; tài khoản, yêu thích và đóng góp vẫn nằm trong DB. User không tự cấp quyền Admin. Tài khoản Admin mẫu chỉ dùng local.

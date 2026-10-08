@@ -13,6 +13,7 @@ import 'package:rendez/features/bookmarks/bookmarks_screen.dart';
 import 'package:rendez/features/explore/explore_screen.dart';
 import 'package:rendez/features/navigation/main_scaffold.dart';
 import 'package:rendez/features/place_detail/place_detail_screen.dart';
+import 'package:rendez/main.dart';
 
 final place = Place.fromJson({
   'id': 'mvp-place',
@@ -62,7 +63,54 @@ class _AdminAuth extends AuthNotifier {
   }
 }
 
+class _SessionAuth extends AuthNotifier {
+  _SessionAuth(super.api);
+  void signIn() =>
+      state = const AuthState(isLoggedIn: true, user: MockData.mockUser);
+  void expire() => state = const AuthState(isLoggedIn: false);
+}
+
 void main() {
+  testWidgets('Startup requires login and expiry clears detail navigation', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    tester.binding.platformDispatcher.textScaleFactorTestValue = 1.5;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.binding.platformDispatcher.clearTextScaleFactorTestValue);
+    final container = ProviderContainer(
+      overrides: [
+        authProvider.overrideWith((ref) => _SessionAuth(ref.read(apiProvider))),
+        placesProvider.overrideWith((ref) async => [place]),
+      ],
+    );
+    addTearDown(container.dispose);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(container: container, child: const RendezApp()),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Email và mật khẩu'), findsOneWidget);
+    expect(find.byType(MainScaffold), findsNothing);
+    final auth = container.read(authProvider.notifier) as _SessionAuth;
+    auth.signIn();
+    await tester.pumpAndSettle();
+    expect(find.byType(MainScaffold), findsOneWidget);
+    Navigator.of(tester.element(find.byType(ExploreScreen))).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const Scaffold(body: Text('Private detail')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    auth.expire();
+    await tester.pumpAndSettle();
+    expect(find.text('Private detail'), findsNothing);
+    expect(find.text('Email và mật khẩu'), findsOneWidget);
+    expect(find.byType(MainScaffold), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
   testWidgets(
     'Narrow discovery remains scrollable with large text and can clear filters',
     (tester) async {
