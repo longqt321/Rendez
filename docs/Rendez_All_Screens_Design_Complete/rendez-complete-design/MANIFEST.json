@@ -1,0 +1,583 @@
+[
+  {
+    "id": "A01",
+    "title": "Đăng nhập",
+    "group": "A",
+    "path": "A/A01_Đăng_nhập.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "A02",
+    "title": "Đăng ký tài khoản",
+    "group": "A",
+    "path": "A/A02_Đăng_ký_tài_khoản.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "A03",
+    "title": "Đăng nhập — lỗi",
+    "group": "A",
+    "path": "A/A03_Đăng_nhập_-_lỗi.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "A04",
+    "title": "Đăng ký — lỗi",
+    "group": "A",
+    "path": "A/A04_Đăng_ký_-_lỗi.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "A05",
+    "title": "Đang xác thực",
+    "group": "A",
+    "path": "A/A05_Đang_xác_thực.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "A06",
+    "title": "Tài khoản của tôi",
+    "group": "A",
+    "path": "A/A06_Tài_khoản_của_tôi.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "A07",
+    "title": "Chế độ hiển thị",
+    "group": "A",
+    "path": "A/A07_Chế_độ_hiển_thị.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "A08",
+    "title": "Đăng xuất",
+    "group": "A",
+    "path": "A/A08_Đăng_xuất.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "B01",
+    "title": "Khám phá địa điểm",
+    "group": "B",
+    "path": "B/B01_Khám_phá_địa_điểm.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "B02",
+    "title": "Tìm kiếm",
+    "group": "B",
+    "path": "B/B02_Tìm_kiếm.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "B03",
+    "title": "Bộ lọc",
+    "group": "B",
+    "path": "B/B03_Bộ_lọc.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "B04",
+    "title": "Kết quả tìm kiếm",
+    "group": "B",
+    "path": "B/B04_Kết_quả_tìm_kiếm.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "B05",
+    "title": "Không có kết quả",
+    "group": "B",
+    "path": "B/B05_Không_có_kết_quả.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "B06",
+    "title": "Thiếu dữ liệu địa điểm",
+    "group": "B",
+    "path": "B/B06_Thiếu_dữ_liệu_địa_điểm.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "B07",
+    "title": "Lỗi tải địa điểm",
+    "group": "B",
+    "path": "B/B07_Lỗi_tải_địa_điểm.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "C01",
+    "title": "Bản đồ địa điểm",
+    "group": "C",
+    "path": "C/C01_Bản_đồ_địa_điểm.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "C02",
+    "title": "Xem trước địa điểm",
+    "group": "C",
+    "path": "C/C02_Xem_trước_địa_điểm.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "C03",
+    "title": "Lọc trên bản đồ",
+    "group": "C",
+    "path": "C/C03_Lọc_trên_bản_đồ.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "C04",
+    "title": "Quyền truy cập vị trí",
+    "group": "C",
+    "path": "C/C04_Quyền_truy_cập_vị_trí.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "C05",
+    "title": "Không có GPS",
+    "group": "C",
+    "path": "C/C05_Không_có_GPS.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "C06",
+    "title": "Không có ghim phù hợp",
+    "group": "C",
+    "path": "C/C06_Không_có_ghim_phù_hợp.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "C07",
+    "title": "Lỗi bản đồ",
+    "group": "C",
+    "path": "C/C07_Lỗi_bản_đồ.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "D01",
+    "title": "Chi tiết địa điểm",
+    "group": "D",
+    "path": "D/D01_Chi_tiết_địa_điểm.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "D02",
+    "title": "Bảng giá / menu",
+    "group": "D",
+    "path": "D/D02_Bảng_giá_-_menu.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "D03",
+    "title": "Tính chi phí",
+    "group": "D",
+    "path": "D/D03_Tính_chi_phí.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "D04",
+    "title": "Chia chi phí",
+    "group": "D",
+    "path": "D/D04_Chia_chi_phí.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "D05",
+    "title": "Khoảng cách",
+    "group": "D",
+    "path": "D/D05_Khoảng_cách.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "D06",
+    "title": "Ảnh menu nguồn",
+    "group": "D",
+    "path": "D/D06_Ảnh_menu_nguồn.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "D07",
+    "title": "Ví dụ hóa đơn",
+    "group": "D",
+    "path": "D/D07_Ví_dụ_hóa_đơn.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "D08",
+    "title": "Thiếu thông tin",
+    "group": "D",
+    "path": "D/D08_Thiếu_thông_tin.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "D09",
+    "title": "Lỗi chi tiết",
+    "group": "D",
+    "path": "D/D09_Lỗi_chi_tiết.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "D10",
+    "title": "Chia sẻ địa điểm",
+    "group": "D",
+    "path": "D/D10_Chia_sẻ_địa_điểm.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "E01",
+    "title": "Địa điểm đã lưu",
+    "group": "E",
+    "path": "E/E01_Địa_điểm_đã_lưu.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "E02",
+    "title": "Chưa có mục đã lưu",
+    "group": "E",
+    "path": "E/E02_Chưa_có_mục_đã_lưu.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "E03",
+    "title": "Cần đăng nhập",
+    "group": "E",
+    "path": "E/E03_Cần_đăng_nhập.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "E04",
+    "title": "Hồ sơ người dùng",
+    "group": "E",
+    "path": "E/E04_Hồ_sơ_người_dùng.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "E05",
+    "title": "Cài đặt giao diện",
+    "group": "E",
+    "path": "E/E05_Cài_đặt_giao_diện.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "E06",
+    "title": "Tài khoản Admin",
+    "group": "E",
+    "path": "E/E06_Tài_khoản_Admin.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "F01",
+    "title": "Gửi đóng góp",
+    "group": "F",
+    "path": "F/F01_Gửi_đóng_góp.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "F02",
+    "title": "Chọn địa điểm",
+    "group": "F",
+    "path": "F/F02_Chọn_địa_điểm.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "F03",
+    "title": "Đề xuất địa điểm",
+    "group": "F",
+    "path": "F/F03_Đề_xuất_địa_điểm.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "F04",
+    "title": "Loại bằng chứng",
+    "group": "F",
+    "path": "F/F04_Loại_bằng_chứng.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "F05",
+    "title": "Chọn ảnh",
+    "group": "F",
+    "path": "F/F05_Chọn_ảnh.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "F06",
+    "title": "Kiểm tra trước khi gửi",
+    "group": "F",
+    "path": "F/F06_Kiểm_tra_trước_khi_gửi.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "F07",
+    "title": "Kết quả gửi",
+    "group": "F",
+    "path": "F/F07_Kết_quả_gửi.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "F08",
+    "title": "Lịch sử đóng góp",
+    "group": "F",
+    "path": "F/F08_Lịch_sử_đóng_góp.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "F09",
+    "title": "Đóng góp chờ duyệt",
+    "group": "F",
+    "path": "F/F09_Đóng_góp_chờ_duyệt.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "F10",
+    "title": "Đóng góp đã duyệt",
+    "group": "F",
+    "path": "F/F10_Đóng_góp_đã_duyệt.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "F11",
+    "title": "Đóng góp bị từ chối",
+    "group": "F",
+    "path": "F/F11_Đóng_góp_bị_từ_chối.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "F12",
+    "title": "Cần đăng nhập",
+    "group": "F",
+    "path": "F/F12_Cần_đăng_nhập.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "G01",
+    "title": "Quản trị",
+    "group": "G",
+    "path": "G/G01_Quản_trị.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "G02",
+    "title": "Chờ duyệt",
+    "group": "G",
+    "path": "G/G02_Chờ_duyệt.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "G03",
+    "title": "Lịch sử duyệt",
+    "group": "G",
+    "path": "G/G03_Lịch_sử_duyệt.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "G04",
+    "title": "Chi tiết bằng chứng",
+    "group": "G",
+    "path": "G/G04_Chi_tiết_bằng_chứng.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "G05",
+    "title": "Chỉnh dữ liệu OCR",
+    "group": "G",
+    "path": "G/G05_Chỉnh_dữ_liệu_OCR.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "G06",
+    "title": "Xác nhận duyệt",
+    "group": "G",
+    "path": "G/G06_Xác_nhận_duyệt.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "G07",
+    "title": "Từ chối đóng góp",
+    "group": "G",
+    "path": "G/G07_Từ_chối_đóng_góp.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "G08",
+    "title": "Danh sách địa điểm",
+    "group": "G",
+    "path": "G/G08_Danh_sách_địa_điểm.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "G09",
+    "title": "Tạo địa điểm",
+    "group": "G",
+    "path": "G/G09_Tạo_địa_điểm.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "G10",
+    "title": "Sửa địa điểm",
+    "group": "G",
+    "path": "G/G10_Sửa_địa_điểm.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "G11",
+    "title": "Trạng thái công khai",
+    "group": "G",
+    "path": "G/G11_Trạng_thái_công_khai.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "G12",
+    "title": "Xóa địa điểm",
+    "group": "G",
+    "path": "G/G12_Xóa_địa_điểm.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "G13",
+    "title": "Không có quyền",
+    "group": "G",
+    "path": "G/G13_Không_có_quyền.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "G14",
+    "title": "OCR không đọc được",
+    "group": "G",
+    "path": "G/G14_OCR_không_đọc_được.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "H01",
+    "title": "Loading skeleton",
+    "group": "H",
+    "path": "H/H01_Loading_skeleton.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "H02",
+    "title": "Không có dữ liệu",
+    "group": "H",
+    "path": "H/H02_Không_có_dữ_liệu.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "H03",
+    "title": "Lỗi kết nối",
+    "group": "H",
+    "path": "H/H03_Lỗi_kết_nối.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "H04",
+    "title": "Ảnh không có sẵn",
+    "group": "H",
+    "path": "H/H04_Ảnh_không_có_sẵn.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "H05",
+    "title": "Biểu mẫu không hợp lệ",
+    "group": "H",
+    "path": "H/H05_Biểu_mẫu_không_hợp_lệ.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "H06",
+    "title": "Đang xử lý",
+    "group": "H",
+    "path": "H/H06_Đang_xử_lý.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "H07",
+    "title": "Thông báo thành công",
+    "group": "H",
+    "path": "H/H07_Thông_báo_thành_công.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "H08",
+    "title": "Xác nhận thao tác",
+    "group": "H",
+    "path": "H/H08_Xác_nhận_thao_tác.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "H09",
+    "title": "Giao diện 320dp",
+    "group": "H",
+    "path": "H/H09_Giao_diện_320dp.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "H10",
+    "title": "Giao diện tablet",
+    "group": "H",
+    "path": "H/H10_Giao_diện_tablet.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "H11",
+    "title": "Giao diện desktop",
+    "group": "H",
+    "path": "H/H11_Giao_diện_desktop.png",
+    "size": "900x1920"
+  },
+  {
+    "id": "WEB-A",
+    "title": "Desktop - A",
+    "group": "DESKTOP",
+    "path": "DESKTOP/DESKTOP_A_A01.png",
+    "size": "1440x900"
+  },
+  {
+    "id": "WEB-B",
+    "title": "Desktop - B",
+    "group": "DESKTOP",
+    "path": "DESKTOP/DESKTOP_B_B01.png",
+    "size": "1440x900"
+  },
+  {
+    "id": "WEB-C",
+    "title": "Desktop - C",
+    "group": "DESKTOP",
+    "path": "DESKTOP/DESKTOP_C_C01.png",
+    "size": "1440x900"
+  },
+  {
+    "id": "WEB-D",
+    "title": "Desktop - D",
+    "group": "DESKTOP",
+    "path": "DESKTOP/DESKTOP_D_D01.png",
+    "size": "1440x900"
+  },
+  {
+    "id": "WEB-E",
+    "title": "Desktop - E",
+    "group": "DESKTOP",
+    "path": "DESKTOP/DESKTOP_E_E01.png",
+    "size": "1440x900"
+  },
+  {
+    "id": "WEB-F",
+    "title": "Desktop - F",
+    "group": "DESKTOP",
+    "path": "DESKTOP/DESKTOP_F_F01.png",
+    "size": "1440x900"
+  },
+  {
+    "id": "WEB-G",
+    "title": "Desktop - G",
+    "group": "DESKTOP",
+    "path": "DESKTOP/DESKTOP_G_G01.png",
+    "size": "1440x900"
+  },
+  {
+    "id": "WEB-H",
+    "title": "Desktop - H",
+    "group": "DESKTOP",
+    "path": "DESKTOP/DESKTOP_H_H01.png",
+    "size": "1440x900"
+  }
+]
